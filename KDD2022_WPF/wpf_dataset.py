@@ -222,6 +222,15 @@ class PGL4WPFDataset(Dataset):
         row, col = np.where(edge_w > kth_vals)
         edges = np.concatenate([row.reshape([-1, 1]), col.reshape([-1, 1])],
                                -1)
+        # for online test
+        if self.flag == "train":
+            import pickle
+            now_abs_dir = os.path.dirname(os.path.realpath(__file__))
+            with open(now_abs_dir + "/" + "edges.pkl", "wb") as g:
+                pickle.dump(edges, g)
+            print("edge_w.shape[0]:", edge_w.shape[0])
+            print("Edges saved!")
+            
         graph = pgl.Graph(num_nodes=edge_w.shape[0], edges=edges)
         return data_x, graph
 

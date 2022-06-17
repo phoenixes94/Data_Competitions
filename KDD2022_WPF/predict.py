@@ -19,6 +19,7 @@ import paddle
 import paddle.nn.functional as F
 import tqdm
 import yaml
+import pickle
 import numpy as np
 from easydict import EasyDict as edict
 
@@ -37,7 +38,7 @@ import matplotlib.pyplot as plt
 
 
 @paddle.no_grad()
-def predict(config, train_data):  #, valid_data, test_data):
+def predict(config, train_data):  # , valid_data, test_data):
     data_mean = paddle.to_tensor(train_data.data_mean, dtype="float32")
     data_scale = paddle.to_tensor(train_data.data_scale, dtype="float32")
 
@@ -100,6 +101,24 @@ def predict(config, train_data):  #, valid_data, test_data):
     print('--- Final Score --- \n\t{}'.format(total_score))
 
 
+def save_std_mean(train_data):
+    """
+    save data for online test
+    """
+    now_abs_dir = os.path.dirname(os.path.realpath(__file__))
+
+    _data_mean = train_data.data_mean
+    _data_scale = train_data.data_scale
+
+    with open(now_abs_dir + "/" + "data_mean.pkl", "wb") as g:
+        pickle.dump(_data_mean, g)
+
+    with open(now_abs_dir + "/" + "data_scale.pkl", "wb") as g:
+        pickle.dump(_data_scale, g)
+
+    print("Data_mean and data_scale saved!")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='main')
     parser.add_argument("--conf", type=str, default="./config.yaml")
@@ -118,4 +137,5 @@ if __name__ == "__main__":
         val_days=config.val_days,
         test_days=config.test_days)
 
-    predict(config, train_data)  #, valid_data, test_data)
+    predict(config, train_data)  # , valid_data, test_data)
+    # save_std_mean(train_data)
