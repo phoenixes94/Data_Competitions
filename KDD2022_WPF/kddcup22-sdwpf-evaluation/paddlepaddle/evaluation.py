@@ -352,7 +352,7 @@ if __name__ == "__main__":
     print(paddle.device.get_device())
 
     # for Zipfile
-    eval(path)
+    # eval(path)
 
     # for Folder
-    # eval_local(path_loacal)
+    eval_local(path_loacal)

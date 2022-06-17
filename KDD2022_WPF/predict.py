@@ -34,7 +34,6 @@ import optimization as optim
 from metrics import regressor_scores, regressor_detailed_scores
 from utils import save_model, _create_if_not_exist, load_model
 import matplotlib.pyplot as plt
-import pickle
 
 
 @paddle.no_grad()
@@ -55,28 +54,22 @@ def predict(config, train_data):  #, valid_data, test_data):
 
     maes, rmses = [], []
     for i, (test_x_f, test_y_f) in enumerate(zip(test_x, test_y)):
-        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, test_mode="test_y")
-        test_y_ds = TestPGL4WPFDataset(filename=test_y_f, test_mode="test_y")
+        test_x_ds = TestPGL4WPFDataset(filename=test_x_f)
+
+        test_y_ds = TestPGL4WPFDataset(filename=test_y_f)
 
         test_x = paddle.to_tensor(
             test_x_ds.get_data()[:, :, -config.input_len:, :], dtype="float32")
         test_y = paddle.to_tensor(
             test_y_ds.get_data()[:, :, :config.output_len, :], dtype="float32")
 
-        # test_x: [1, 134, 144, 12]
         pred_y = model(test_x, test_y, data_mean, data_scale, graph)
         pred_y = F.relu(pred_y * data_scale[:, :, :, -1] + data_mean[:, :, :,
                                                                      -1])
-        print(pred_y)
-        # (1, 134, 288, 1)
+
         pred_y = np.expand_dims(pred_y.numpy(), -1)
         test_y = test_y[:, :, :, -1:].numpy()
 
-        # 负值检验, relu已经替代
-        # print("pred_y have valus less than 0:", np.any(pred_y < 0))
-        # print(np.count_nonzero(pred_y < 0))
-
-        # (134, 1, 288, 1)
         pred_y = np.transpose(pred_y, [
             1,
             0,
@@ -107,24 +100,6 @@ def predict(config, train_data):  #, valid_data, test_data):
     print('--- Final Score --- \n\t{}'.format(total_score))
 
 
-def save_std_mean(train_data):
-    """
-    save data for online test
-    """
-    now_abs_dir = os.path.dirname(os.path.realpath(__file__))
-
-    _data_mean = train_data.data_mean
-    _data_scale = train_data.data_scale
-
-    with open(now_abs_dir + "/" + "data_mean.pkl", "wb") as g:
-        pickle.dump(_data_mean, g)
-
-    with open(now_abs_dir + "/" + "data_scale.pkl", "wb") as g:
-        pickle.dump(_data_scale, g)
-
-    print("Data_mean and data_scale saved!")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='main')
     parser.add_argument("--conf", type=str, default="./config.yaml")
@@ -144,4 +119,3 @@ if __name__ == "__main__":
         test_days=config.test_days)
 
     predict(config, train_data)  #, valid_data, test_data)
-    # save_std_mean(train_data)

@@ -62,7 +62,7 @@ def data_augment(X, y, p=0.8, alpha=0.5, beta=0.5):
     return paddle.concat([fix_X, X], -1), paddle.concat([fix_y, y], -1)
 
 
-def train_and_evaluate(config, train_data, valid_data, test_data):
+def train_and_evaluate(config, train_data, valid_data, test_data=0):
     if paddle.distributed.get_world_size() > 1:
         paddle.distributed.init_parallel_env()
 
@@ -86,12 +86,12 @@ def train_and_evaluate(config, train_data, valid_data, test_data):
         drop_last=False,
         num_workers=config.num_workers)
 
-    test_data_loader = DataLoader(
-        test_data,
-        batch_size=config.batch_size,
-        shuffle=False,
-        drop_last=False,
-        num_workers=config.num_workers)
+    # test_data_loader = DataLoader(
+    #     test_data,
+    #     batch_size=config.batch_size,
+    #     shuffle=False,
+    #     drop_last=False,
+    #     num_workers=config.num_workers)
 
     model = WPFModel(config=config)
 
@@ -116,7 +116,6 @@ def train_and_evaluate(config, train_data, valid_data, test_data):
     test_records = []
 
     for epoch in range(config.epoch):
-        log.info("epoch: %s " % epoch)
         for batch_x, batch_y in train_data_loader:
             batch_x = batch_x.astype('float32')
             batch_y = batch_y.astype('float32')
@@ -157,18 +156,18 @@ def train_and_evaluate(config, train_data, valid_data, test_data):
 
             best_score = min(valid_r['score'], best_score)
 
-            test_r = evaluate(
-                test_data_loader,
-                test_data.get_raw_df(),
-                model,
-                loss_fn,
-                config,
-                data_mean,
-                data_scale,
-                tag="test",
-                graph=graph)
-            log.info("Test " + str(dict(test_r)))
-            test_records.append(test_r)
+            # test_r = evaluate(
+            #     test_data_loader,
+            #     test_data.get_raw_df(),
+            #     model,
+            #     loss_fn,
+            #     config,
+            #     data_mean,
+            #     data_scale,
+            #     tag="test",
+            #     graph=graph)
+            # log.info("Test " + str(dict(test_r)))
+            # test_records.append(test_r)
 
             if best_score == valid_r['score']:
                 patient = 0
@@ -181,7 +180,7 @@ def train_and_evaluate(config, train_data, valid_data, test_data):
     best_epochs = min(enumerate(valid_records), key=lambda x: x[1]["score"])[0]
     log.info("Best valid Epoch %s" % best_epochs)
     log.info("Best valid score %s" % valid_records[best_epochs])
-    log.info("Best valid test-score %s" % test_records[best_epochs])
+    # log.info("Best valid test-score %s" % test_records[best_epochs])
 
 
 def visualize_prediction(input_batch, pred_batch, gold_batch, tag):
@@ -280,6 +279,7 @@ def evaluate(valid_data_loader,
 
     return output_metric
 
+
 def seed(seed=42000):
     random.seed(seed)
     np.random.seed(seed)
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 
-    paddle.device.set_device("gpu:6")
+    paddle.device.set_device("gpu:5")
     print(paddle.device.get_device())
 
     print(config)
@@ -327,14 +327,14 @@ if __name__ == "__main__":
         train_days=config.train_days,
         val_days=config.val_days,
         test_days=config.test_days)
-    test_data = PGL4WPFDataset(
-        config.data_path,
-        filename=config.filename,
-        size=size,
-        flag='test',
-        total_days=config.total_days,
-        train_days=config.train_days,
-        val_days=config.val_days,
-        test_days=config.test_days)
+    # test_data = PGL4WPFDataset(
+    #     config.data_path,
+    #     filename=config.filename,
+    #     size=size,
+    #     flag='test',
+    #     total_days=config.total_days,
+    #     train_days=config.train_days,
+    #     val_days=config.val_days,
+    #     test_days=config.test_days)
 
-    train_and_evaluate(config, train_data, valid_data, test_data)
+    train_and_evaluate(config, train_data, valid_data, test_data=0)

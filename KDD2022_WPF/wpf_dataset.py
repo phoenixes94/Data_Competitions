@@ -15,7 +15,6 @@
 import os
 import time
 import datetime
-import joblib
 import numpy as np
 import pandas as pd
 import paddle
@@ -23,8 +22,6 @@ from paddle.io import Dataset
 
 import pgl
 from pgl.utils.logger import log
-
-from lightgbm import LGBMRegressor
 
 
 def time2obj(time_sj):
@@ -57,68 +54,6 @@ def func_add_h(x):
     hour_e = time_obj.tm_hour
     return hour_e
 
-
-def preprocess_data(data):
-    col = list(data.columns)
-    nan_idx = (data == 0).sum(1) > 3
-    if np.sum(nan_idx) != 0:
-        pass
-        # print(data.loc[nan_idx,col])
-    data.loc[nan_idx, col] = np.nan
-
-    # 3填充空值
-    data = data.fillna(method="ffill")
-    data = data.fillna(method="bfill")
-    # 4官方标注的异常值
-    # (1)"patv"<0=========>=0
-    idx1 = data["Patv"] < 0
-    if np.sum(data.loc[idx1, ["Patv"]].values < -20) > 0:
-        raise NameError(
-            "有负值小于-20,{}".format(data.loc[data["Patv"] < -20, ["Patv"]]))
-    data.loc[idx1, ["Patv"]] = 0
-    # (2)Patv<=1 AND Wspd>2.5
-    # 因为这块没法做异常检测，所以阈值卡多一点
-    idx2 = ((data['Patv'] < 100) & (data['Wspd'] > 2.5))
-    # (3)修正其他数值
-    idx3_1 = data['Pab1'] > 89
-    data.loc[idx3_1, ["Pab1"]] = 89
-    idx3_2 = data['Pab2'] > 89
-    data.loc[idx3_2, ["Pab2"]] = 89
-    idx3_3 = data['Pab3'] > 89
-    data.loc[idx3_3, ["Pab3"]] = 89
-    idx4 = data['Wdir'] < -180
-    data.loc[idx4, ["Wdir"]] = -180
-    idx5 = data['Wdir'] > 180
-    data.loc[idx5, ["Wdir"]] = 180
-    idx6 = data['Ndir'] < -720
-    data.loc[idx6, ["Ndir"]] = -720
-    idx7 = data['Ndir'] > 720
-    data.loc[idx7, ["Ndir"]] = 720
-    # 异常检测pass
-    # 异常修正(idx2,)=====================
-    prey = pair_data(data.loc[idx2, :])
-    data.loc[idx2, ["Patv"]] = prey
-
-    return data
-
-
-def pair_data(bad_data):
-    print(bad_data.columns)
-    x_col = list(bad_data.columns)
-    x_col.remove('TurbID')
-    x_col.remove('Day')
-    x_col.remove('Tmstamp')
-    x_col.remove('Patv')
-    # x_train, x_val, y_train, y_val = train_test_split(
-    #     train_val_data[x_col], train_val_data["Patv"], test_size=0.2, shuffle=True)
-    # gbm = LGBMRegressor(objective='regression', num_leaves=31,
-    #                     learning_rate=0.1, n_estimators=500, )
-    # now_abs_dir = os.path.dirname(os.path.realpath(__file__))
-    gbm = joblib.load("lgb_model.pkl")
-    pre_Y = gbm.predict(bad_data[x_col])
-
-    return pre_Y
-    
 
 class PGL4WPFDataset(Dataset):
     """
@@ -221,8 +156,6 @@ class PGL4WPFDataset(Dataset):
 
         pd.set_option('mode.chained_assignment', None)
         raw_df_data = new_df_data
-
-        # process()
         new_df_data = new_df_data.replace(
             to_replace=np.nan, value=0, inplace=False)
 
@@ -289,15 +222,6 @@ class PGL4WPFDataset(Dataset):
         row, col = np.where(edge_w > kth_vals)
         edges = np.concatenate([row.reshape([-1, 1]), col.reshape([-1, 1])],
                                -1)
-        # for online test
-        if self.flag == "train":
-            import pickle
-            now_abs_dir = os.path.dirname(os.path.realpath(__file__))
-            with open(now_abs_dir + "/" + "edges.pkl", "wb") as g:
-                pickle.dump(edges, g)
-            print("edge_w.shape[0]:", edge_w.shape[0])
-            print("Edges saved!")
-
         graph = pgl.Graph(num_nodes=edge_w.shape[0], edges=edges)
         return data_x, graph
 
@@ -307,7 +231,7 @@ class TestPGL4WPFDataset(Dataset):
     Desc: Data preprocessing,
     """
 
-    def __init__(self, filename, capacity=134, day_len=24 * 6, test_mode="test_x"):
+    def __init__(self, filename, capacity=134, day_len=24 * 6):
 
         super().__init__()
         self.unit_size = day_len
@@ -316,14 +240,10 @@ class TestPGL4WPFDataset(Dataset):
         self.capacity = capacity
         self.filename = filename
 
-        self.test_mode = test_mode
-
         self.__read_data__()
 
     def __read_data__(self):
         df_raw = pd.read_csv(self.filename)
-        if self.test_mode == "test_x":
-            df_raw = preprocess_data(df_raw)
         df_data, raw_df_data = self.data_preprocess(df_raw)
         self.df_data = df_data
         self.raw_df_data = raw_df_data
@@ -338,8 +258,7 @@ class TestPGL4WPFDataset(Dataset):
             'TurbID' not in n
         ]
         feature_name.append("Patv")
-        # feature: ['Wspd', 'Wdir', 'Etmp', 'Itmp', 'Ndir', 'Pab1', \
-        #           'Pab2', 'Pab3', 'Prtv', 'Patv', 'time', 'weekday']
+
         new_df_data = df_data[feature_name]
 
         log.info('adding time')
@@ -364,7 +283,7 @@ class TestPGL4WPFDataset(Dataset):
         raw_df_data = self.raw_df_data[cols_data]
         data = df_data.values
         raw_data = raw_df_data.values
-        # (134, 288, 12)
+
         data = np.reshape(data, [self.capacity, -1, len(cols_data)])
         raw_data = np.reshape(raw_data, [self.capacity, -1, len(cols_data)])
 
