@@ -345,14 +345,14 @@ def eval_local(submit_file):
 
 
 if __name__ == "__main__":
-    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-merge.zip"
+    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0619.zip"
     path_loacal = "./test-lxf"
 
     paddle.device.set_device("gpu:4")
     print(paddle.device.get_device())
 
     # for Zipfile
-    # eval(path)
+    eval(path)
 
     # for Folder
-    eval_local(path_loacal)
+    # eval_local(path_loacal)

@@ -138,4 +138,4 @@ if __name__ == "__main__":
         test_days=config.test_days)
 
     predict(config, train_data)  # , valid_data, test_data)
-    # save_std_mean(train_data)
+    save_std_mean(train_data)

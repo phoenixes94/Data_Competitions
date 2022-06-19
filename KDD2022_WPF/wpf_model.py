@@ -41,7 +41,7 @@ class SeriesDecomp(nn.Layer):
         mean_x = F.avg_pool1d(
             t_x, self.kernel_size, stride=1, padding="SAME", exclusive=False)
         mean_x = paddle.transpose(mean_x, [0, 2, 1])
-        return x - mean_x, mean_x
+        return  x - mean_x, mean_x
 
 
 class TransformerDecoderLayer(nn.Layer):

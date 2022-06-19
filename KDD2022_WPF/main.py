@@ -62,7 +62,7 @@ def data_augment(X, y, p=0.8, alpha=0.5, beta=0.5):
     return paddle.concat([fix_X, X], -1), paddle.concat([fix_y, y], -1)
 
 
-def train_and_evaluate(config, train_data, valid_data, test_data=0):
+def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=True):
     if paddle.distributed.get_world_size() > 1:
         paddle.distributed.init_parallel_env()
 
@@ -125,6 +125,11 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0):
             batch_y = batch_y[:, :, :, -1]
             batch_y = (
                 batch_y - data_mean[:, :, :, -1]) / data_scale[:, :, :, -1]
+
+            if print_info:
+                params_info = paddle.summary(WPFModel, (batch_x, input_y, data_mean, data_scale, graph))
+                print(params_info)
+
             pred_y = model(batch_x, input_y, data_mean, data_scale, graph)
             loss = loss_fn(pred_y, batch_y, input_y, col_names)
             loss.backward()
@@ -304,7 +309,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 
-    paddle.device.set_device("gpu:5")
+    paddle.device.set_device("gpu:1")
     print(paddle.device.get_device())
 
     print(config)
