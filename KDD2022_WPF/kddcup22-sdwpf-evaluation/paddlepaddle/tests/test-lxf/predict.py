@@ -36,17 +36,17 @@ from utils import save_model, _create_if_not_exist, load_model
 import pickle
 
 
-def load_data():
+def load_data(index):
     now_abs_dir = os.path.dirname(os.path.realpath(__file__))
     # load offline data
-    print(os.path.join(now_abs_dir, "data_mean.pkl"))
-    with open(os.path.join(now_abs_dir,  "data_mean.pkl"), "rb") as g:
+    print(os.path.join(now_abs_dir, "checkpoints", index,  "data_mean.pkl"))
+    with open(os.path.join(now_abs_dir, "checkpoints", index, "data_mean.pkl"), "rb") as g:
         data_mean = pickle.load(g)
 
-    with open(os.path.join(now_abs_dir, "data_scale.pkl"), "rb") as p:
+    with open(os.path.join(now_abs_dir, "checkpoints", index, "data_scale.pkl"), "rb") as p:
         data_scale = pickle.load(p)
 
-    with open(os.path.join(now_abs_dir,  "edges.pkl"), "rb") as q:
+    with open(os.path.join(now_abs_dir, "checkpoints", index, "edges.pkl"), "rb") as q:
         edges = pickle.load(q)
 
     return data_mean, data_scale, edges
@@ -64,7 +64,7 @@ def predict(settings, index):  # , valid_data, test_data):
     """
     # data_mean：[1, 134, 1, 1]
     # data_scale：[1, 134, 1, 1]
-    _data_mean, _data_scale, edges = load_data()
+    _data_mean, _data_scale, edges = load_data(str(index))
     
     data_mean = paddle.to_tensor(_data_mean, dtype="float32")
     data_scale = paddle.to_tensor(_data_scale, dtype="float32")
@@ -115,9 +115,9 @@ def forecast(settings):
     for i in range(settings["num_model"]):
         prediction[i] = predict(settings, i)  # , valid_data, test_data)
 
-    predictions = ( 1.0 * prediction[0] + 1.0 * prediction[1] + 1.0 * prediction[2]) / 3
+    predictions = ( 1.0 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] +  1 *prediction[3]) / 4
 
-    # predictions = prediction[1]
+    # predictions = prediction[3]
     print(predictions.shape)
     return predictions
 
