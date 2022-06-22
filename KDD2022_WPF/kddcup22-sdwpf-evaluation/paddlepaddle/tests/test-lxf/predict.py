@@ -115,7 +115,23 @@ def forecast(settings):
     for i in range(settings["num_model"]):
         prediction[i] = predict(settings, i)  # , valid_data, test_data)
 
-    predictions = ( 1.0 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] +  1 *prediction[3]) / 4
+    # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
+    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+    #                 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3]) / 7
+
+    # RMSE: 47.22517822241438, MAE: 39.24244758937393, Score: 43.233812905894155, and Accuracy: 60.3170%
+    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+    #                 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3]) / 6
+
+    # 全部6个
+    #  RMSE: 47.930290857729105, MAE: 38.44831633803584, Score: 43.18930359788247, and Accuracy: 58.5734%
+    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
+
+    # 全部5个
+    # RMSE: 47.81502660818225, MAE: 38.5331096761427, Score: 43.174068142162476, and Accuracy: 58.8305%
+    predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+                    1 * prediction[3] + 1 * prediction[4] ) / 5
 
     # predictions = prediction[3]
     print(predictions.shape)
