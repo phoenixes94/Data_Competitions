@@ -24,6 +24,7 @@ from easydict import EasyDict as edict
 import pgl
 from pgl.utils.logger import log
 from paddle.io import DataLoader
+import paddle.distributed as dist
 import random
 
 import loss as loss_factory
@@ -35,6 +36,9 @@ from utils import save_model, _create_if_not_exist, load_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5'
 
 
 def data_augment(X, y, p=0.8, alpha=0.5, beta=0.5):
@@ -126,9 +130,9 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
             batch_y = (
                 batch_y - data_mean[:, :, :, -1]) / data_scale[:, :, :, -1]
 
-            if print_info:
-                params_info = paddle.summary(WPFModel, (batch_x, input_y, data_mean, data_scale, graph))
-                print(params_info)
+            # if print_info:
+            #     params_info = paddle.summary(WPFModel, (batch_x, input_y, data_mean, data_scale, graph))
+            #     print(params_info)
 
             pred_y = model(batch_x, input_y, data_mean, data_scale, graph)
             loss = loss_fn(pred_y, batch_y, input_y, col_names)
@@ -303,13 +307,13 @@ def seed(seed=42000):
     # os.environ['PYTHONHASHSEED'] = str(config['seed'])
 
 if __name__ == "__main__":
-    seed(42)
+    seed(2022)
     parser = argparse.ArgumentParser(description='main')
     parser.add_argument("--conf", type=str, default="./config.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 
-    paddle.device.set_device("gpu:1")
+    paddle.device.set_device("gpu")
     print(paddle.device.get_device())
 
     print(config)
@@ -341,5 +345,7 @@ if __name__ == "__main__":
     #     train_days=config.train_days,
     #     val_days=config.val_days,
     #     test_days=config.test_days)
+
+    # dist.spawn(train_and_evaluate, args=(config, train_data, valid_data, 0), nprocs=2)
 
     train_and_evaluate(config, train_data, valid_data, test_data=0)
