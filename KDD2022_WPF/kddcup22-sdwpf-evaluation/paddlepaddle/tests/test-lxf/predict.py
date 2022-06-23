@@ -125,13 +125,13 @@ def forecast(settings):
 
     # 全部6个
     #  RMSE: 47.930290857729105, MAE: 38.44831633803584, Score: 43.18930359788247, and Accuracy: 58.5734%
-    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
+    predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+                    1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
 
     # 全部5个
     # RMSE: 47.81502660818225, MAE: 38.5331096761427, Score: 43.174068142162476, and Accuracy: 58.8305%
-    predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-                    1 * prediction[3] + 1 * prediction[4] ) / 5
+    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+    #                 1 * prediction[3] + 1 * prediction[4] ) / 5
 
     # predictions = prediction[3]
     print(predictions.shape)
