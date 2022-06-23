@@ -34,12 +34,12 @@ class FilterMSELoss(nn.Layer):
         cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab2"]] > 89)
         cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab3"]] > 89)
 
-        cond2 = paddle.logical_or(cond2,
-                                  raw[:, :, :, col_names["Wdir"]] < -180)
-        cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Wdir"]] > 180)
-        cond2 = paddle.logical_or(cond2,
-                                  raw[:, :, :, col_names["Ndir"]] < -720)
-        cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Ndir"]] > 720)
+        # cond2 = paddle.logical_or(cond2,
+        #                           raw[:, :, :, col_names["Wdir"]] < -180)
+        # cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Wdir"]] > 180)
+        # cond2 = paddle.logical_or(cond2,
+        #                           raw[:, :, :, col_names["Ndir"]] < -720)
+        # cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Ndir"]] > 720)
         cond2 = paddle.logical_or(cond2, cond1)
 
         cond3 = raw[:, :, :, col_names["Patv"]] == 0
