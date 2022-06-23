@@ -345,6 +345,7 @@ class WPFModel(nn.Layer):
             layer._epsilon = 1e-12
 
     def forward(self, batch_x, batch_y, data_mean, data_scale, graph=None):
+        # [bz, 134, 144, 12]
         bz, id_len, input_len, var_len = batch_x.shape
 
         batch_graph = pgl.Graph.batch([graph] * bz)
@@ -369,6 +370,7 @@ class WPFModel(nn.Layer):
         batch_y_weekday_emb = self.w_dec_emb(
             paddle.concat([weekday_id, y_weekday_id], 1))
 
+        # 时间和星期特征融合融入model？
         batch_x = paddle.transpose(batch_x, [0, 2, 1, 3])
 
         batch_pred_trend = paddle.mean(batch_x, 1, keepdim=True)[:, :, :, -1]
