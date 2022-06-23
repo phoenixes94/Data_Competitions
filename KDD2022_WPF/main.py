@@ -121,6 +121,8 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
 
     for epoch in range(config.epoch):
         for batch_x, batch_y in train_data_loader:
+            # batch_x: [128, 134, 144, 12]
+            # batch_y: [128, 134, 288, 12]
             batch_x = batch_x.astype('float32')
             batch_y = batch_y.astype('float32')
             batch_x, batch_y = data_augment(batch_x, batch_y)
@@ -134,6 +136,8 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
             #     params_info = paddle.summary(WPFModel, (batch_x, input_y, data_mean, data_scale, graph))
             #     print(params_info)
 
+            # batch_x: [bz=128, 134, 144, 12]
+            # batch_y: [bz=128, 134, 288]
             pred_y = model(batch_x, input_y, data_mean, data_scale, graph)
             loss = loss_fn(pred_y, batch_y, input_y, col_names)
             loss.backward()
@@ -313,7 +317,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 
-    paddle.device.set_device("gpu")
+    paddle.device.set_device("gpu:1")
     print(paddle.device.get_device())
 
     print(config)
