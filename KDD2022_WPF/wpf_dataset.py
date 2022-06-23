@@ -138,10 +138,16 @@ class PGL4WPFDataset(Dataset):
 
     def data_preprocess(self, df_data):
 
+        # feature_name = [
+        #     n for n in df_data.columns
+        #     if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
+        #     'TurbID' not in n
+        # ]
         feature_name = [
             n for n in df_data.columns
             if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
-            'TurbID' not in n
+            'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
+            'Itmp' not in n and 'Ndir' not in n
         ]
         feature_name.append("Patv")
 
