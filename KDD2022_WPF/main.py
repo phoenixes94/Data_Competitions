@@ -18,6 +18,7 @@ import paddle
 import paddle.nn.functional as F
 import tqdm
 import yaml
+import pickle
 import numpy as np
 from easydict import EasyDict as edict
 
@@ -36,6 +37,7 @@ from utils import save_model, _create_if_not_exist, load_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from sklearn.model_selection import TimeSeriesSplit
 
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5'
@@ -184,7 +186,7 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
 
             if best_score == valid_r['score']:
                 patient = 0
-                save_model(config.output_path, model, steps=epoch)
+                save_model(os.path.join(config.output_path, 'checkpoint'), model, steps=epoch)
             else:
                 patient += 1
                 if patient > config.patient:
@@ -194,6 +196,8 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
     log.info("Best valid Epoch %s" % best_epochs)
     log.info("Best valid score %s" % valid_records[best_epochs])
     # log.info("Best valid test-score %s" % test_records[best_epochs])
+
+    return valid_records[best_epochs]
 
 
 def visualize_prediction(input_batch, pred_batch, gold_batch, tag):
@@ -293,6 +297,22 @@ def evaluate(valid_data_loader,
     return output_metric
 
 
+def save_std_mean(output_path, train_data):
+    """
+    save data for online test
+    """
+    _data_mean = train_data.data_mean
+    _data_scale = train_data.data_scale
+
+    with open(output_path + "/" + "data_mean.pkl", "wb") as g:
+        pickle.dump(_data_mean, g)
+
+    with open(output_path + "/" + "data_scale.pkl", "wb") as g:
+        pickle.dump(_data_scale, g)
+
+    log.info("Data_mean and data_scale saved!")
+
+
 def seed(seed=42000):
     random.seed(seed)
     np.random.seed(seed)
@@ -312,44 +332,71 @@ def seed(seed=42000):
 
 if __name__ == "__main__":
     seed(2022)
+    paddle.device.set_device("gpu:2")
+    print(paddle.device.get_device())
+
     parser = argparse.ArgumentParser(description='main')
     parser.add_argument("--conf", type=str, default="./config.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
-
-    paddle.device.set_device("gpu:1")
-    print(paddle.device.get_device())
-
     print(config)
     size = [config.input_len, config.output_len]
-    train_data = PGL4WPFDataset(
-        config.data_path,
-        filename=config.filename,
-        size=size,
-        flag='train',
-        total_days=config.total_days,
-        train_days=config.train_days,
-        val_days=config.val_days,
-        test_days=config.test_days)
-    valid_data = PGL4WPFDataset(
-        config.data_path,
-        filename=config.filename,
-        size=size,
-        flag='val',
-        total_days=config.total_days,
-        train_days=config.train_days,
-        val_days=config.val_days,
-        test_days=config.test_days)
-    # test_data = PGL4WPFDataset(
-    #     config.data_path,
-    #     filename=config.filename,
-    #     size=size,
-    #     flag='test',
-    #     total_days=config.total_days,
-    #     train_days=config.train_days,
-    #     val_days=config.val_days,
-    #     test_days=config.test_days)
 
-    # dist.spawn(train_and_evaluate, args=(config, train_data, valid_data, 0), nprocs=2)
+    tscv = TimeSeriesSplit(n_splits=10)
+    print(tscv)
+    fold = 0
+    valid_records = [0 for _ in range(10)]
+    time_step = [i for i in range(config.total_days)]
+    for train_index, valid_index in tscv.split(time_step):
+        log.info("================= Kfold %s =================" % fold)
+        # print(train_index, valid_index)
+        config.output_path = os.path.join(config.output_path_raw, str(fold))
+        _create_if_not_exist(config.output_path + '/')
+        train_days = len(train_index)
+        val_days = len(valid_index)
+    
+        train_data = PGL4WPFDataset(
+            config.data_path,
+            filename=config.filename,
+            size=size,
+            flag='train',
+            total_days=config.total_days,
+            train_days=train_days,
+            val_days=val_days,
+            test_days=config.test_days,
+            output_path=config.output_path )
+        valid_data = PGL4WPFDataset(
+            config.data_path,
+            filename=config.filename,
+            size=size,
+            flag='val',
+            total_days=config.total_days,
+            train_days=train_days,
+            val_days=val_days,
+            test_days=config.test_days,
+            output_path=config.output_path)
+        save_std_mean(config.output_path, train_data)
+        # test_data = PGL4WPFDataset(
+        #     config.data_path,
+        #     filename=config.filename,
+        #     size=size,
+        #     flag='test',
+        #     total_days=config.total_days,
+        #     train_days=config.train_days,
+        #     val_days=config.val_days,
+        #     test_days=config.test_days)
 
-    train_and_evaluate(config, train_data, valid_data, test_data=0)
+        # dist.spawn(train_and_evaluate, args=(config, train_data, valid_data, 0), nprocs=2)
+
+        valid_records[fold] = train_and_evaluate(config, train_data, valid_data, test_data=0)
+        fold += 1
+
+    # calucate k-fold mean score
+    score, farm_score = 0, 0
+    for valid_record in valid_records:
+        score += valid_record['score']
+        farm_score += valid_record['farm_score']
+    score = score / len(valid_records)
+    farm_score = farm_score / len(valid_records)
+    log.info('score:', score)
+    log.info('farm_score:', farm_score)

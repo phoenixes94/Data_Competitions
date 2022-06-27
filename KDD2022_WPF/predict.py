@@ -47,7 +47,7 @@ def predict(config, train_data):  # , valid_data, test_data):
 
     model = WPFModel(config=config)
 
-    global_step = load_model(config.output_path, model)
+    global_step = load_model(config.output_path_raw, model)
     model.eval()
 
     test_x = sorted(glob.glob(os.path.join("predict_data", "test_x", "*")))

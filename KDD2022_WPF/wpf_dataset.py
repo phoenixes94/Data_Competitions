@@ -75,7 +75,8 @@ class PGL4WPFDataset(Dataset):
             val_days=16,  # 3 days
             test_days=15,  # 6 days
             total_days=184,  # 30 days
-            theta=0.9, ):
+            theta=0.9, 
+            output_path='./output/baseline/0/'):
 
         super().__init__()
         self.unit_size = day_len
@@ -89,6 +90,7 @@ class PGL4WPFDataset(Dataset):
         self.start_col = 0
         self.capacity = capacity
         self.theta = theta
+        self.output_path = output_path
 
         # initialization
         assert flag in ['train', 'test', 'val']
@@ -98,9 +100,9 @@ class PGL4WPFDataset(Dataset):
         self.data_path = data_path
         self.filename = filename
 
-        self.total_size = self.unit_size * total_days
-        self.train_size = train_days * self.unit_size
-        self.val_size = val_days * self.unit_size
+        self.total_size = total_days * self.unit_size # 35280 = 245 * 144 
+        self.train_size = train_days * self.unit_size # 33120 = 230 * 144
+        self.val_size   = val_days * self.unit_size   # 2160 = 15 * 144
 
         self.test_size = test_days * self.unit_size
         self.__read_data__()
@@ -171,6 +173,7 @@ class PGL4WPFDataset(Dataset):
         return self.raw_df
 
     def build_graph_data(self, df_data):
+        # ['weekday', 'time', 'Wspd', 'Pab1', 'Pab2', 'Pab3', 'Prtv', 'Patv']
         cols_data = df_data.columns[self.start_col:]
         df_data = df_data[cols_data]
         raw_df_data = self.raw_df_data[cols_data]
@@ -182,10 +185,12 @@ class PGL4WPFDataset(Dataset):
         raw_data = np.reshape(
             raw_data, [self.capacity, self.total_size, len(cols_data)])
 
+        #begin [0, 33120-144, 33120+2160-144,]
         border1s = [
             0, self.train_size - self.input_len,
             self.train_size + self.val_size - self.input_len
         ]
+        #end [33120, 33120+2160, 33120+2160+0]
         border2s = [
             self.train_size, self.train_size + self.val_size,
             self.train_size + self.val_size + self.test_size
@@ -231,11 +236,11 @@ class PGL4WPFDataset(Dataset):
         # for online test
         if self.flag == "train":
             import pickle
-            now_abs_dir = os.path.dirname(os.path.realpath(__file__))
-            with open(now_abs_dir + "/" + "edges.pkl", "wb") as g:
+            # now_abs_dir = os.path.dirname(os.path.realpath(__file__))
+            with open(self.output_path + '/' + "edges.pkl", "wb") as g:
                 pickle.dump(edges, g)
-            print("edge_w.shape[0]:", edge_w.shape[0])
-            print("Edges saved!")
+            log.info("edge_w.shape[0]: %s " % edge_w.shape[0])
+            log.info("Edges saved!")
             
         graph = pgl.Graph(num_nodes=edge_w.shape[0], edges=edges)
         return data_x, graph
@@ -267,10 +272,16 @@ class TestPGL4WPFDataset(Dataset):
         self.data_x = data_x
 
     def data_preprocess(self, df_data):
+        # feature_name = [
+        #     n for n in df_data.columns
+        #     if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
+        #     'TurbID' not in n
+        # ]
         feature_name = [
             n for n in df_data.columns
             if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
-            'TurbID' not in n
+            'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
+            'Itmp' not in n and 'Ndir' not in n
         ]
         feature_name.append("Patv")
 
