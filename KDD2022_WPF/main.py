@@ -37,7 +37,7 @@ from utils import save_model, _create_if_not_exist, load_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from sklearn.model_selection import TimeSeriesSplit
+from sklearn.model_selection import KFold, TimeSeriesSplit
 
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5'
@@ -332,7 +332,7 @@ def seed(seed=42000):
 
 if __name__ == "__main__":
     seed(2022)
-    paddle.device.set_device("gpu:2")
+    paddle.device.set_device("gpu:3")
     print(paddle.device.get_device())
 
     parser = argparse.ArgumentParser(description='main')
@@ -342,14 +342,19 @@ if __name__ == "__main__":
     print(config)
     size = [config.input_len, config.output_len]
 
-    tscv = TimeSeriesSplit(n_splits=10)
-    print(tscv)
     fold = 0
-    valid_records = [0 for _ in range(10)]
+    KFold = 20
+    valid_records = [0 for _ in range(KFold)]
     time_step = [i for i in range(config.total_days)]
+    tscv = TimeSeriesSplit(n_splits=KFold)
+    print(tscv)
     for train_index, valid_index in tscv.split(time_step):
+        if fold < 10:
+            fold += 1
+            continue
+
         log.info("================= Kfold %s =================" % fold)
-        # print(train_index, valid_index)
+        print(train_index, valid_index)
         config.output_path = os.path.join(config.output_path_raw, str(fold))
         _create_if_not_exist(config.output_path + '/')
         train_days = len(train_index)
@@ -390,13 +395,19 @@ if __name__ == "__main__":
 
         valid_records[fold] = train_and_evaluate(config, train_data, valid_data, test_data=0)
         fold += 1
+        # paddle.device.cuda.empty_cache()
 
     # calucate k-fold mean score
-    score, farm_score = 0, 0
+    num, score, farm_score = 0, 0, 0
     for valid_record in valid_records:
+        if valid_record == 0:
+            continue
         score += valid_record['score']
         farm_score += valid_record['farm_score']
-    score = score / len(valid_records)
-    farm_score = farm_score / len(valid_records)
-    log.info('score:', score)
-    log.info('farm_score:', farm_score)
+        num += 1
+    score = score / num
+    farm_score = farm_score / num
+    log.info("mean_score: %s " % score)
+    log.info('mean_farm_score: %s ' % farm_score)
+    
+    log.info(valid_records)
