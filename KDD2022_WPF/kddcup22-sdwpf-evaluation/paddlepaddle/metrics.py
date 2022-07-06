@@ -296,6 +296,10 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, settings):
     identifier = int(tokens[-1][:-6]) - 1
     all_mae, all_rmse = [], []
     all_latest_mae, all_latest_rmse = [], []
+    # add
+    one_day_all_mae, one_day_all_rmse = [], []
+    two_day_all_mae, two_day_all_rmse = [], []
+    step = 144
     if not is_identical_prediction(predictions, identifier, settings) and \
             not is_zero_prediction(predictions, identifier, settings):
         pass
@@ -315,8 +319,32 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, settings):
         latest_mae, latest_rmse = turbine_scores(prediction, gt, raw_df, settings["day_len"], idx=identifier)
         all_latest_mae.append(latest_mae)
         all_latest_rmse.append(latest_rmse)
+        # add
+        one_mae, one_rmse = turbine_scores(prediction[:step,:], gt[:step,:], raw_df.iloc[:step,:], step)
+        one_day_all_mae.append(one_mae)
+        one_day_all_rmse.append(one_rmse)
+        two_mae, two_rmse = turbine_scores(prediction[step:, :], gt[step:, :], raw_df.iloc[step:, :], step)
+        two_day_all_mae.append(two_mae)
+        two_day_all_rmse.append(two_rmse)
+
+        # third_mae, third_rmse = turbine_scores(prediction[96*2:96*3, :], gt[96*2:96*3, :], raw_df.iloc[96*2:96*3, :], 96)
+        # third_day_all_mae.append(third_mae)
+        # third_day_all_rmse.append(third_rmse)
+
     total_mae = np.array(all_mae).sum()
     total_rmse = np.array(all_rmse).sum()
+    # add
+    total_one_mae = np.array(one_day_all_mae).sum()
+    total_one_rmse = np.array(one_day_all_rmse).sum()
+    total_two_mae = np.array(two_day_all_mae).sum()
+    total_two_rmse = np.array(two_day_all_rmse).sum()
+
+    # total_third_mae = np.array(third_day_all_mae).sum()
+    # total_third_rmse = np.array(third_day_all_rmse).sum()
+
+    print(f"First day: {(total_one_rmse + total_one_mae) / 2}, \
+            Second day: {(total_two_mae + total_two_rmse) / 2}" )
+
     if total_mae < 0 or total_rmse < 0:
         raise MetricsError("{}th prediction: summed MAE ({:.2f}) or RMSE ({:.2f}) is negative, "
                            "which indicates too many invalid values "
