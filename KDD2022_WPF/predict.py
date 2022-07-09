@@ -47,7 +47,7 @@ def predict(config, train_data):  # , valid_data, test_data):
 
     model = WPFModel(config=config)
 
-    global_step = load_model(config.output_path_raw, model)
+    global_step = load_model(config.output_path, model)
     model.eval()
 
     test_x = sorted(glob.glob(os.path.join("predict_data", "test_x", "*")))
@@ -55,9 +55,9 @@ def predict(config, train_data):  # , valid_data, test_data):
 
     maes, rmses = [], []
     for i, (test_x_f, test_y_f) in enumerate(zip(test_x, test_y)):
-        test_x_ds = TestPGL4WPFDataset(filename=test_x_f)
+        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=config.output_path, test_x=False)
 
-        test_y_ds = TestPGL4WPFDataset(filename=test_y_f)
+        test_y_ds = TestPGL4WPFDataset(filename=test_y_f, output_path=config.output_path, test_x=False)
 
         test_x = paddle.to_tensor(
             test_x_ds.get_data()[:, :, -config.input_len:, :], dtype="float32")
@@ -101,19 +101,19 @@ def predict(config, train_data):  # , valid_data, test_data):
     print('--- Final Score --- \n\t{}'.format(total_score))
 
 
-def save_std_mean(train_data):
+def save_std_mean(train_data, output_path):
     """
     save data for online test
     """
-    now_abs_dir = os.path.dirname(os.path.realpath(__file__))
+    # now_abs_dir = os.path.dirname(os.path.realpath(__file__))
 
     _data_mean = train_data.data_mean
     _data_scale = train_data.data_scale
 
-    with open(now_abs_dir + "/" + "data_mean.pkl", "wb") as g:
+    with open(output_path + "/" + "data_mean.pkl", "wb") as g:
         pickle.dump(_data_mean, g)
 
-    with open(now_abs_dir + "/" + "data_scale.pkl", "wb") as g:
+    with open(output_path + "/" + "data_scale.pkl", "wb") as g:
         pickle.dump(_data_scale, g)
 
     print("Data_mean and data_scale saved!")
@@ -135,7 +135,8 @@ if __name__ == "__main__":
         total_days=config.total_days,
         train_days=config.train_days,
         val_days=config.val_days,
-        test_days=config.test_days)
+        test_days=config.test_days,
+        output_path=config.output_path)
 
     predict(config, train_data)  # , valid_data, test_data)
-    save_std_mean(train_data)
+    save_std_mean(train_data, config.output_path)
