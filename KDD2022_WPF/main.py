@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import argparse
 import paddle
 import paddle.nn.functional as F
 import tqdm
 import yaml
-import pickle
 import numpy as np
 from easydict import EasyDict as edict
 
@@ -37,10 +38,9 @@ from utils import save_model, _create_if_not_exist, load_model
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold, TimeSeriesSplit
 
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3,4,5'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
 
 
 def data_augment(X, y, p=0.8, alpha=0.5, beta=0.5):
@@ -122,6 +122,7 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
     test_records = []
 
     for epoch in range(config.epoch):
+        # for i, (batch_x, batch_y) in enumerate(train_data_loader):
         for batch_x, batch_y in train_data_loader:
             # batch_x: [128, 134, 144, 12]
             # batch_y: [128, 134, 288, 12]
@@ -141,17 +142,21 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
             # batch_x: [bz=128, 134, 144, 12]
             # batch_y: [bz=128, 134, 288]
             pred_y = model(batch_x, input_y, data_mean, data_scale, graph)
+            # loss = loss_fn(pred_y[:, :, :144], batch_y[:, :, :144], input_y[:, :, :144, :], col_names)  #优化前144
             loss = loss_fn(pred_y, batch_y, input_y, col_names)
             loss.backward()
 
+            # Only update weights every other 2 iterations
+            # Effective batch size is doubled
+            # if (i + 1) % 2 == 0 or (i + 1) == len(train_data_loader):
             opt.step()
             opt.clear_gradients()
             global_step += 1
             if paddle.distributed.get_rank(
             ) == 0 and global_step % config.log_per_steps == 0:
                 log.info("Step %s Train MSE-Loss: %s RMSE-Loss: %s" %
-                         (global_step, loss.numpy()[0],
-                          (paddle.sqrt(loss)).numpy()[0]))
+                        (global_step, loss.numpy()[0],
+                        (paddle.sqrt(loss)).numpy()[0]))
 
         if paddle.distributed.get_rank() == 0:
 
@@ -186,7 +191,7 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
 
             if best_score == valid_r['score']:
                 patient = 0
-                save_model(os.path.join(config.output_path, 'checkpoint'), model, steps=epoch)
+                save_model(config.output_path, model, steps=epoch)
             else:
                 patient += 1
                 if patient > config.patient:
@@ -196,8 +201,6 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
     log.info("Best valid Epoch %s" % best_epochs)
     log.info("Best valid score %s" % valid_records[best_epochs])
     # log.info("Best valid test-score %s" % test_records[best_epochs])
-
-    return valid_records[best_epochs]
 
 
 def visualize_prediction(input_batch, pred_batch, gold_batch, tag):
@@ -268,6 +271,9 @@ def evaluate(valid_data_loader,
     gold_batch = np.expand_dims(gold_batch, -1)
     input_batch = np.expand_dims(input_batch, -1)
 
+    # pred_batch  (134, bs=1873, 288, 1)
+    # gold_batch  (134, bs=1873, 288, 1)
+    # input_batch (134, bs=1873, 576, 1)
     pred_batch = np.transpose(pred_batch, [1, 0, 2, 3])
     gold_batch = np.transpose(gold_batch, [1, 0, 2, 3])
     input_batch = np.transpose(input_batch, [1, 0, 2, 3])
@@ -297,22 +303,6 @@ def evaluate(valid_data_loader,
     return output_metric
 
 
-def save_std_mean(output_path, train_data):
-    """
-    save data for online test
-    """
-    _data_mean = train_data.data_mean
-    _data_scale = train_data.data_scale
-
-    with open(output_path + "/" + "data_mean.pkl", "wb") as g:
-        pickle.dump(_data_mean, g)
-
-    with open(output_path + "/" + "data_scale.pkl", "wb") as g:
-        pickle.dump(_data_scale, g)
-
-    log.info("Data_mean and data_scale saved!")
-
-
 def seed(seed=42000):
     random.seed(seed)
     np.random.seed(seed)
@@ -332,82 +322,47 @@ def seed(seed=42000):
 
 if __name__ == "__main__":
     seed(2022)
-    paddle.device.set_device("gpu:3")
-    print(paddle.device.get_device())
-
     parser = argparse.ArgumentParser(description='main')
     parser.add_argument("--conf", type=str, default="./config.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
+    _create_if_not_exist(config.output_path + '/')
+
+    paddle.device.set_device("gpu:0")
+    print(paddle.device.get_device())
+
     print(config)
     size = [config.input_len, config.output_len]
+    train_data = PGL4WPFDataset(
+        config.data_path,
+        filename=config.filename,
+        size=size,
+        flag='train',
+        total_days=config.total_days,
+        train_days=config.train_days,
+        val_days=config.val_days,
+        test_days=config.test_days,
+        output_path=config.output_path)
+    valid_data = PGL4WPFDataset(
+        config.data_path,
+        filename=config.filename,
+        size=size,
+        flag='val',
+        total_days=config.total_days,
+        train_days=config.train_days,
+        val_days=config.val_days,
+        test_days=config.test_days,
+        output_path=config.output_path)
+    # test_data = PGL4WPFDataset(
+    #     config.data_path,
+    #     filename=config.filename,
+    #     size=size,
+    #     flag='test',
+    #     total_days=config.total_days,
+    #     train_days=config.train_days,
+    #     val_days=config.val_days,
+    #     test_days=config.test_days)
 
-    fold = 0
-    KFold = 20
-    valid_records = [0 for _ in range(KFold)]
-    time_step = [i for i in range(config.total_days)]
-    tscv = TimeSeriesSplit(n_splits=KFold)
-    print(tscv)
-    for train_index, valid_index in tscv.split(time_step):
-        if fold < 10:
-            fold += 1
-            continue
+    # dist.spawn(train_and_evaluate, args=(config, train_data, valid_data, test_data=0), nprocs=2)
 
-        log.info("================= Kfold %s =================" % fold)
-        print(train_index, valid_index)
-        config.output_path = os.path.join(config.output_path_raw, str(fold))
-        _create_if_not_exist(config.output_path + '/')
-        train_days = len(train_index)
-        val_days = len(valid_index)
-    
-        train_data = PGL4WPFDataset(
-            config.data_path,
-            filename=config.filename,
-            size=size,
-            flag='train',
-            total_days=config.total_days,
-            train_days=train_days,
-            val_days=val_days,
-            test_days=config.test_days,
-            output_path=config.output_path )
-        valid_data = PGL4WPFDataset(
-            config.data_path,
-            filename=config.filename,
-            size=size,
-            flag='val',
-            total_days=config.total_days,
-            train_days=train_days,
-            val_days=val_days,
-            test_days=config.test_days,
-            output_path=config.output_path)
-        save_std_mean(config.output_path, train_data)
-        # test_data = PGL4WPFDataset(
-        #     config.data_path,
-        #     filename=config.filename,
-        #     size=size,
-        #     flag='test',
-        #     total_days=config.total_days,
-        #     train_days=config.train_days,
-        #     val_days=config.val_days,
-        #     test_days=config.test_days)
-
-        # dist.spawn(train_and_evaluate, args=(config, train_data, valid_data, 0), nprocs=2)
-
-        valid_records[fold] = train_and_evaluate(config, train_data, valid_data, test_data=0)
-        fold += 1
-        # paddle.device.cuda.empty_cache()
-
-    # calucate k-fold mean score
-    num, score, farm_score = 0, 0, 0
-    for valid_record in valid_records:
-        if valid_record == 0:
-            continue
-        score += valid_record['score']
-        farm_score += valid_record['farm_score']
-        num += 1
-    score = score / num
-    farm_score = farm_score / num
-    log.info("mean_score: %s " % score)
-    log.info('mean_farm_score: %s ' % farm_score)
-    
-    log.info(valid_records)
+    train_and_evaluate(config, train_data, valid_data, test_data=0)
