@@ -210,6 +210,9 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, capacity,
         A tuple of metrics
     """
     all_mae, all_rmse = [], []
+    step = 144
+    one_day_all_mae, one_day_all_rmse = [], []
+    two_day_all_mae, two_day_all_rmse = [], []
     for i in range(capacity):
         prediction = predictions[i]
         gt = gts[i]
@@ -217,8 +220,23 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, capacity,
         _mae, _rmse = turbine_scores(prediction, gt, raw_df, output_len, 1)
         all_mae.append(_mae)
         all_rmse.append(_rmse)
+        # add
+        one_mae, one_rmse = turbine_scores(prediction[:step,:], gt[:step,:], raw_df.iloc[:step,:], step)
+        one_day_all_mae.append(one_mae)
+        one_day_all_rmse.append(one_rmse)
+        two_mae, two_rmse = turbine_scores(prediction[step:, :], gt[step:, :], raw_df.iloc[step:, :], step)
+        two_day_all_mae.append(two_mae)
+        two_day_all_rmse.append(two_rmse)
+
     total_mae = np.array(all_mae).sum()
     total_rmse = np.array(all_rmse).sum()
+    # add
+    total_one_mae = np.array(one_day_all_mae).sum()
+    total_one_rmse = np.array(one_day_all_rmse).sum()
+    total_two_mae = np.array(two_day_all_mae).sum()
+    total_two_rmse = np.array(two_day_all_rmse).sum()
+    print(f"First day: {(total_one_rmse + total_one_mae) / 2}, \
+            Second day: {(total_two_mae + total_two_rmse) / 2}" )
     return total_mae, total_rmse
 
 
