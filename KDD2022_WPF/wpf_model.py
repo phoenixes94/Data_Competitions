@@ -346,6 +346,7 @@ class WPFModel(nn.Layer):
 
     def forward(self, batch_x, batch_y, data_mean, data_scale, graph=None):
         # [bz, 134, 144, 12]
+        # batch_x = batch_x[:, :, ::2, :]
         bz, id_len, input_len, var_len = batch_x.shape
 
         batch_graph = pgl.Graph.batch([graph] * bz)

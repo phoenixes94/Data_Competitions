@@ -17,11 +17,13 @@ import time
 import datetime
 import numpy as np
 import pandas as pd
-import paddle
+# import paddle
+import joblib
 from paddle.io import Dataset
 
 import pgl
 from pgl.utils.logger import log
+from sklearn.neighbors import LocalOutlierFactor
 
 
 def time2obj(time_sj):
@@ -55,6 +57,93 @@ def func_add_h(x):
     return hour_e
 
 
+def LOF(data, outliers_fraction=0.05):
+    WIND = "Wspd"
+    norm_data = data[[WIND, "Patv"]].copy()
+    norm_data[WIND] = norm_data[WIND]/max(norm_data[WIND])
+    norm_data["Patv"] = norm_data["Patv"]/max(norm_data["Patv"])
+
+    # fit the model
+    clf = LocalOutlierFactor(n_neighbors=35, contamination=outliers_fraction)
+    y_pred = clf.fit_predict(norm_data)
+
+    good_idx = y_pred == 1
+    bad_idx = y_pred == -1
+
+    # =============plot=================
+    good_data = data.loc[good_idx, :]
+    bad_data = data.loc[bad_idx, :]
+    print("good_num:{} bad_num:{}".format(len(good_data), len(bad_data)))
+
+    return good_data, bad_data
+
+
+def pair_data(bad_data, output_path):
+    print(bad_data.columns)
+    x_col = ['Wspd']
+
+    gbm = joblib.load(os.path.join(output_path, "lgb_model_p0630_20.pkl"))
+    log.info('lgb model loaded!')
+    pre_Y = gbm.predict(bad_data[x_col])
+    bad_data["Patv"] = pre_Y
+
+    return bad_data
+
+
+def preprocess_data(data, output_path):
+    col = list(data.columns)
+    nan_idx = (data == 0).sum(1) > 3
+    if np.sum(nan_idx) != 0:
+        pass
+        # print(data.loc[nan_idx,col])
+    data.loc[nan_idx, col] = np.nan
+
+    # 1.填充空值
+    data = data.fillna(method="ffill")
+    data = data.fillna(method="bfill")
+    # 4官方标注的异常值
+    # (1)"patv"<0=========>=0
+    idx1 = data["Patv"] < 0
+    if np.sum(data.loc[idx1, ["Patv"]].values < -20) > 0:
+        raise NameError(
+            "有负值小于-20,{}".format(data.loc[data["Patv"] < -20, ["Patv"]]))
+    # data.loc[idx1, ["Patv"]] = 0
+    # (2)Patv<=1 AND Wspd>2.5
+    # 因为这块没法做异常检测，所以阈值卡多一点
+    idx2 = ((data['Patv'] < 100) & (data['Wspd'] > 2.5))
+    # (3)修正其他数值
+    # idx3_1 = data['Pab1'] > 89
+    # data.loc[idx3_1, ["Pab1"]] = 89
+    # idx3_2 = data['Pab2'] > 89
+    # data.loc[idx3_2, ["Pab2"]] = 89
+    # idx3_3 = data['Pab3'] > 89
+    # data.loc[idx3_3, ["Pab3"]] = 89
+    # idx4 = data['Wdir'] < -180
+    # data.loc[idx4, ["Wdir"]] = -180
+    # idx5 = data['Wdir'] > 180
+    # data.loc[idx5, ["Wdir"]] = 180
+    # idx6 = data['Ndir'] < -720
+    # data.loc[idx6, ["Ndir"]] = -720
+    # idx7 = data['Ndir'] > 720
+    # data.loc[idx7, ["Ndir"]] = 720
+
+    # 异常检测pass
+    del_rate = 0.20
+    not_wash_data = data.loc[idx2, :]
+    wash_data = data.loc[~idx2, :]
+    good_data, bad_data = LOF(wash_data, outliers_fraction=del_rate)
+
+    # 异常修正(idx2,)=====================
+    bad_data = bad_data.append(not_wash_data)
+    bad_data = pair_data(bad_data, output_path)
+
+    finally_data = good_data.append(bad_data)
+    assert len(finally_data) == len(data)
+    finally_data = finally_data.sort_values(by=["TurbID", "Day", "Tmstamp"], ascending=True)
+
+    return finally_data
+
+
 class PGL4WPFDataset(Dataset):
     """
     Desc: Data preprocessing,
@@ -76,7 +165,7 @@ class PGL4WPFDataset(Dataset):
             test_days=15,  # 6 days
             total_days=184,  # 30 days
             theta=0.9, 
-            output_path='./output/baseline/0/'):
+            output_path='./output/baseline/'):
 
         super().__init__()
         self.unit_size = day_len
@@ -145,12 +234,20 @@ class PGL4WPFDataset(Dataset):
         #     if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
         #     'TurbID' not in n
         # ]
+        # del ["Tmstamp","Wdir","Ndir","Etmp","Itmp",]
         feature_name = [
             n for n in df_data.columns
             if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
             'Itmp' not in n and 'Ndir' not in n
         ]
+        # feature_name = [
+        #     n for n in df_data.columns
+        #     if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
+        #     'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
+        #     'Itmp' not in n and 'Ndir' not in n and 'Pab1' not in n and
+        #     'Pab2' not in n and 'Pab3' not in n 
+        # ]
         feature_name.append("Patv")
 
         new_df_data = df_data[feature_name]
@@ -251,7 +348,7 @@ class TestPGL4WPFDataset(Dataset):
     Desc: Data preprocessing,
     """
 
-    def __init__(self, filename, capacity=134, day_len=24 * 6):
+    def __init__(self, filename, capacity=134, day_len=24 * 6, output_path='./output/baseline/', test_x=False):
 
         super().__init__()
         self.unit_size = day_len
@@ -259,11 +356,15 @@ class TestPGL4WPFDataset(Dataset):
         self.start_col = 0
         self.capacity = capacity
         self.filename = filename
+        self.output_path = output_path
+        self.test_x = test_x
 
         self.__read_data__()
 
     def __read_data__(self):
         df_raw = pd.read_csv(self.filename)
+        if self.test_x:
+            df_raw = preprocess_data(df_raw, self.output_path)
         df_data, raw_df_data = self.data_preprocess(df_raw)
         self.df_data = df_data
         self.raw_df_data = raw_df_data
@@ -283,6 +384,13 @@ class TestPGL4WPFDataset(Dataset):
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
             'Itmp' not in n and 'Ndir' not in n
         ]
+        # feature_name = [
+        #     n for n in df_data.columns
+        #     if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
+        #     'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
+        #     'Itmp' not in n and 'Ndir' not in n and 'Pab1' not in n and
+        #     'Pab2' not in n and 'Pab3' not in n 
+        # ]
         feature_name.append("Patv")
 
         new_df_data = df_data[feature_name]
