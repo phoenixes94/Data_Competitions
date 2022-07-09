@@ -4,3 +4,5 @@ model_archi.png
 
 output
 data
+__pycache__
+/kddcup22-sdwpf-evaluation/paddlepaddle/__pycache__
