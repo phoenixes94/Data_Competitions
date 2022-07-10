@@ -13,6 +13,7 @@ import os
 import traceback
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class MetricsError(Exception):
@@ -327,9 +328,25 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, settings):
         two_day_all_mae.append(two_mae)
         two_day_all_rmse.append(two_rmse)
 
-        # third_mae, third_rmse = turbine_scores(prediction[96*2:96*3, :], gt[96*2:96*3, :], raw_df.iloc[96*2:96*3, :], 96)
-        # third_day_all_mae.append(third_mae)
-        # third_day_all_rmse.append(third_rmse)
+        # ============For 288 points changing trends============
+    #     turb_mae, turb_rmse = [], []
+    #     for i in range(144):
+    #         i_step = i * 2
+    #         i_mae, i_rmse = turbine_scores(prediction[i_step:i_step+2, :], gt[i_step:i_step+2, :], raw_df.iloc[i_step:i_step+2, :], 2)
+    #         if i_mae == -1:
+    #             i_mae, i_rmse = 0, 0
+    #         turb_mae.append(i_mae)
+    #         turb_rmse.append(i_rmse)
+
+    #     all_turb_mae.append(turb_mae)
+    #     all_turb_rmse.append(turb_rmse)
+    # total_turb_mae = np.array(all_turb_mae).sum(axis=0)
+    # total_turb_rmse = np.array(all_turb_rmse).sum(axis=0)
+    # total_turb_mae_rmse = []
+    # for i in range(len(total_turb_mae)):
+    #     total_turb_mae_rmse.append((total_turb_mae[i] + total_turb_rmse[i]) / 2)
+    # visualize_prediction(total_turb_mae, total_turb_rmse, total_turb_mae_rmse,  tag='288')
+    # ============For 288 points changing trends============
 
     total_mae = np.array(all_mae).sum()
     total_rmse = np.array(all_rmse).sum()
@@ -338,9 +355,6 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, settings):
     total_one_rmse = np.array(one_day_all_rmse).sum()
     total_two_mae = np.array(two_day_all_mae).sum()
     total_two_rmse = np.array(two_day_all_rmse).sum()
-
-    # total_third_mae = np.array(third_day_all_mae).sum()
-    # total_third_rmse = np.array(third_day_all_rmse).sum()
 
     print(f"First day: {(total_one_rmse + total_one_mae) / 2}, \
             Second day: {(total_two_mae + total_two_rmse) / 2}" )
@@ -354,4 +368,32 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, settings):
                            "all of the turbines in {}th prediction! ".format(identifier))
     total_latest_mae = np.array(all_latest_mae).sum()
     total_latest_rmse = np.array(all_latest_rmse).sum()
+
+    # visual
+    # all_mae_rmse = []
+    # for i in range(len(all_mae)):
+    #     all_mae_rmse.append((all_mae[i] + all_rmse[i]) / 2)
+    # visualize_prediction(all_mae, all_rmse, all_mae_rmse)
     return total_mae, total_rmse, total_latest_mae, total_latest_rmse
+
+
+def visualize_prediction(all_mae, all_rmse, all_mae_rmse, tag='metric'):
+    """
+    Desc:
+        Visual metrics
+    Args:
+        all_mae:
+        all_rmse: 
+        all_mae_rmse:
+    Returns:
+        Plot
+    """
+    plt.figure()
+    for i in range(1, 2):
+        ax = plt.subplot(1, 1, i)
+        ax.plot(all_mae, label="mae")
+        ax.plot(all_rmse, label="rmse")
+        ax.plot(all_mae_rmse, label="mae_rmse")
+        ax.legend()
+    plt.savefig(tag + "_vis.png")
+    plt.close()

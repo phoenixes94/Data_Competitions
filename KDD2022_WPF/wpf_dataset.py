@@ -239,7 +239,7 @@ class PGL4WPFDataset(Dataset):
             n for n in df_data.columns
             if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
-            'Itmp' not in n and 'Ndir' not in n
+            'Itmp' not in n and 'Ndir' not in n and 'Prtv' not in n
         ]
         # feature_name = [
         #     n for n in df_data.columns
@@ -382,7 +382,7 @@ class TestPGL4WPFDataset(Dataset):
             n for n in df_data.columns
             if "Patv" not in n and 'Day' not in n and 'Tmstamp' not in n and
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
-            'Itmp' not in n and 'Ndir' not in n
+            'Itmp' not in n and 'Ndir' not in n and 'Prtv' not in n
         ]
         # feature_name = [
         #     n for n in df_data.columns

@@ -235,7 +235,7 @@ def regressor_detailed_scores(predictions, gts, raw_df_lst, capacity,
     total_one_rmse = np.array(one_day_all_rmse).sum()
     total_two_mae = np.array(two_day_all_mae).sum()
     total_two_rmse = np.array(two_day_all_rmse).sum()
-    print(f"First day: {(total_one_rmse + total_one_mae) / 2}, \
+    print(f"===Valid=== First day: {(total_one_rmse + total_one_mae) / 2}, \
             Second day: {(total_two_mae + total_two_rmse) / 2}" )
     return total_mae, total_rmse
 

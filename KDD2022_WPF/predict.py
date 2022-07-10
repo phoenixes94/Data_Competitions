@@ -50,8 +50,8 @@ def predict(config, train_data):  # , valid_data, test_data):
     global_step = load_model(config.output_path, model)
     model.eval()
 
-    test_x = sorted(glob.glob(os.path.join("predict_data", "test_x", "*")))
-    test_y = sorted(glob.glob(os.path.join("predict_data", "test_y", "*")))
+    test_x = sorted(glob.glob(os.path.join("predict_data_raw", "test_x", "*")))
+    test_y = sorted(glob.glob(os.path.join("predict_data_raw", "test_y", "*")))
 
     maes, rmses = [], []
     for i, (test_x_f, test_y_f) in enumerate(zip(test_x, test_y)):
@@ -64,6 +64,7 @@ def predict(config, train_data):  # , valid_data, test_data):
         test_y = paddle.to_tensor(
             test_y_ds.get_data()[:, :, :config.output_len, :], dtype="float32")
 
+        # test_x = test_x[:, :, ::2, :]
         pred_y = model(test_x, test_y, data_mean, data_scale, graph)
         pred_y = F.relu(pred_y * data_scale[:, :, :, -1] + data_mean[:, :, :,
                                                                      -1])
@@ -97,8 +98,7 @@ def predict(config, train_data):  # , valid_data, test_data):
     avg_rmse = np.array(rmses).mean()
     total_score = (avg_mae + avg_rmse) / 2
 
-    print('\n --- Final MAE: {}, RMSE: {} ---'.format(avg_mae, avg_rmse))
-    print('--- Final Score --- \n\t{}'.format(total_score))
+    print('\n --- Final MAE: {}, RMSE: {} Score: {} ---'.format(avg_mae, avg_rmse, total_score))
 
 
 def save_std_mean(train_data, output_path):

@@ -89,8 +89,8 @@ def performance(settings, idx, prediction, ground_truth, ground_truth_df):
     return overall_mae, overall_rmse, acc
 
 
-TAR_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../test_y.zip'))
-PRED_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../test_x.zip'))
+TAR_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../test_y_raw.zip'))
+PRED_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../test_x_raw.zip'))
 DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data'))
 REQUIRED_ENV_VARS = [
     "pred_file",
@@ -101,7 +101,7 @@ REQUIRED_ENV_VARS = [
 SUPPORTED_FRAMEWORKS = [
     "base", "paddlepaddle", "pytorch", "tensorflow"
 ]
-NUM_MAX_RUNS = 195
+NUM_MAX_RUNS = 14
 MAX_TIMEOUT = 3600 * 10     # 10 hours
 MIN_TIME = 3                # 3 secs
 MIN_NOISE_LEVEL = 0.001     # 0.1 %
@@ -279,8 +279,9 @@ def evaluate(path_to_src_dir):
         avg_mae = np.array(maes).mean()
         avg_rmse = np.array(rmses).mean()
         total_score = (avg_mae + avg_rmse) / 2
-        print('\n --- Final MAE: {}, RMSE: {} ---'.format(avg_mae, avg_rmse))
-        print('--- Final Score --- \n\t{}'.format(total_score))
+        print('\n --- Final MAE: {}, RMSE: {} Score: {} ---'.format(avg_mae, avg_rmse, total_score))
+        # print('\n --- Final MAE: {}, RMSE: {} ---'.format(avg_mae, avg_rmse))
+        # print('--- Final Score --- \n\t{}'.format(total_score))
 
     if envs["is_debug"]:
         print("\nElapsed time for prediction is {} secs\n".format(end_forecast_time - start_test_time))
@@ -345,14 +346,14 @@ def eval_local(submit_file):
 
 
 if __name__ == "__main__":
-    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0619.zip"
+    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0710-1.zip"
     path_loacal = "./test-lxf"
 
     paddle.device.set_device("gpu:4")
     print(paddle.device.get_device())
 
     # for Zipfile
-    eval(path)
+    # eval(path)
 
     # for Folder
-    # eval_local(path_loacal)
+    eval_local(path_loacal)

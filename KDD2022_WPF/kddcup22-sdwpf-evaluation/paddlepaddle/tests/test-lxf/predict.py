@@ -15,6 +15,7 @@
 import os
 import argparse
 import joblib
+from matplotlib.pyplot import axis
 import paddle
 import paddle.nn.functional as F
 import tqdm
@@ -72,17 +73,19 @@ def predict(settings, index):  # , valid_data, test_data):
     graph = pgl.Graph(num_nodes=134, edges=edges)
     graph = graph.tensor()
 
-    print(settings["model_{}".format(index)])
-    model = WPFModel(config=settings["model_{}".format(index)])
+    turb_setting = settings["model_{}".format(index)]
+    print(turb_setting)
+    model = WPFModel(config=turb_setting)
 
+    output_path = os.path.join(settings["checkpoints"], "{}".format(index))
     print(os.path.join(settings["checkpoints"], "{}".format(index), "checkpoint"))
     global_step = load_model(os.path.join(settings["checkpoints"], "{}".format(index), "checkpoint"), model)
     model.eval()
 
     test_x_f = settings["path_to_test_x"]
-    test_x_ds = TestPGL4WPFDataset(filename=test_x_f)
-    test_x = paddle.to_tensor(test_x_ds.get_data()[:, :, -settings["input_len"]:, :], dtype="float32")
-    test_y = paddle.ones(shape=[1, 134, settings["output_len"], 12], dtype="float32")
+    test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=output_path, test_x=False)
+    test_x = paddle.to_tensor(test_x_ds.get_data()[:, :,  -turb_setting["input_len"]:, :], dtype="float32")
+    test_y = paddle.ones(shape=[1, 134, turb_setting["output_len"], 12], dtype="float32")
 
     # [1, 134, 288]
     # test_x:[1, 134, 144, 12]; test_y:[1, 134, 288, 12]; data_mean:[1, 134, 1, 1]
@@ -111,9 +114,9 @@ def forecast(settings):
         The predictions as a tensor \in R^{134 * 288 * 1}
     """
     # i = 1
-    prediction = [0 for i in range(settings["num_model"])]
-    for i in range(settings["num_model"]):
-        prediction[i] = predict(settings, i)  # , valid_data, test_data)
+    # prediction = [0 for i in range(settings["num_model"])]
+    # for i in range(settings["num_model"]):
+    #     prediction[i] = predict(settings, i)  # , valid_data, test_data)
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
@@ -125,16 +128,24 @@ def forecast(settings):
 
     # 全部6个
     #  RMSE: 47.930290857729105, MAE: 38.44831633803584, Score: 43.18930359788247, and Accuracy: 58.5734%
-    predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-                    1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
+    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
+    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
 
     # 全部5个
     # RMSE: 47.81502660818225, MAE: 38.5331096761427, Score: 43.174068142162476, and Accuracy: 58.8305%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[4] ) / 5
+    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5] + 1 * prediction[6] + 1 * prediction[7] + \
+    #                 1 * prediction[8] + 1 * prediction[9]) / 10
 
-    # predictions = prediction[3]
-    print(predictions.shape)
+    # predictions = predict(settings, 1)
+
+    # predictions = np.concatenate((predict(settings, 1)[:, :144, :], predict(settings, 4)[:, 144:, :]), axis=1)
+
+    predictions = (predict(settings, 0) + predict(settings, 4)) / 2
+    predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
+
+    # predictions = predict(settings, 0)[:, :144, :144]
+    print('predictions.shape: ', predictions.shape)
     return predictions
 
 

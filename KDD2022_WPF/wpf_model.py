@@ -303,6 +303,7 @@ class WPFModel(nn.Layer):
         self.config_file = config
         self.var_len = config.var_len
         self.input_len = config.input_len
+        # self.input_len = 144
         self.output_len = config.output_len
         self.hidden_dims = config.model.hidden_dims
         self.capacity = config.capacity
