@@ -83,7 +83,7 @@ def predict(settings, index):  # , valid_data, test_data):
     model.eval()
 
     test_x_f = settings["path_to_test_x"]
-    test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=output_path, test_x=False)
+    test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=output_path, test_x=False, del_feat_ind=index)
     test_x = paddle.to_tensor(test_x_ds.get_data()[:, :,  -turb_setting["input_len"]:, :], dtype="float32")
     test_y = paddle.ones(shape=[1, 134, turb_setting["output_len"], 12], dtype="float32")
 
@@ -137,12 +137,12 @@ def forecast(settings):
     #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5] + 1 * prediction[6] + 1 * prediction[7] + \
     #                 1 * prediction[8] + 1 * prediction[9]) / 10
 
-    # predictions = predict(settings, 1)
+    # predictions = predict(settings, 3)
 
     # predictions = np.concatenate((predict(settings, 1)[:, :144, :], predict(settings, 4)[:, 144:, :]), axis=1)
 
-    predictions = (predict(settings, 0) + predict(settings, 4)) / 2
-    predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
+    predictions = (predict(settings, 0) + predict(settings, 1)) / 2
+    # predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
 
     # predictions = predict(settings, 0)[:, :144, :144]
     print('predictions.shape: ', predictions.shape)

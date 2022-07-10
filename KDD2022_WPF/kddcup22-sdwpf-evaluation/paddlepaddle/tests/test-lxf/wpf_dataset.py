@@ -323,7 +323,7 @@ class TestPGL4WPFDataset(Dataset):
     Desc: Data preprocessing,
     """
 
-    def __init__(self, filename, capacity=134, day_len=24 * 6, output_path='./output/baseline/', test_x=False):
+    def __init__(self, filename, capacity=134, day_len=24 * 6, output_path='./output/baseline/', test_x=False, del_feat_ind=0):
 
         super().__init__()
         self.unit_size = day_len
@@ -333,6 +333,7 @@ class TestPGL4WPFDataset(Dataset):
         self.filename = filename
         self.output_path = output_path
         self.test_x = test_x
+        self.del_feat_ind = del_feat_ind
 
         self.__read_data__()
 
@@ -359,6 +360,9 @@ class TestPGL4WPFDataset(Dataset):
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
             'Itmp' not in n and 'Ndir' not in n
         ]
+        if self.del_feat_ind in [1, 2, 3]:
+            feature_name.remove('Prtv')
+            
         feature_name.append("Patv")
 
         new_df_data = df_data[feature_name]
