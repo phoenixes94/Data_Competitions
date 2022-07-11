@@ -126,6 +126,7 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
         for batch_x, batch_y in train_data_loader:
             # batch_x: [128, 134, 144, 12]
             # batch_y: [128, 134, 288, 12]
+            # batch_x = batch_x[:, :, ::2, :]
             batch_x = batch_x.astype('float32')
             batch_y = batch_y.astype('float32')
             batch_x, batch_y = data_augment(batch_x, batch_y)
@@ -239,6 +240,7 @@ def evaluate(valid_data_loader,
     input_batch = []
     losses = []
     for batch_x, batch_y in valid_data_loader:
+        # batch_x = batch_x[:, :, ::2, :]
         batch_x = batch_x.astype('float32')
         batch_y = batch_y.astype('float32')
 
@@ -328,7 +330,7 @@ if __name__ == "__main__":
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
     _create_if_not_exist(config.output_path + '/')
 
-    paddle.device.set_device("gpu:0")
+    paddle.device.set_device("gpu:2")
     print(paddle.device.get_device())
 
     print(config)
