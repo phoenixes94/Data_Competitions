@@ -25,6 +25,7 @@ import pgl
 from pgl.utils.logger import log
 # from lightgbm import LGBMRegressor
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.ensemble import IsolationForest
 
 
 def time2obj(time_sj):
@@ -144,6 +145,94 @@ def preprocess_data(data, output_path):
 
     return data
 
+
+def isoforest(data, WIND, C=0.05, show=False):
+    clf = IsolationForest(contamination=C)
+    norm_data = data[[WIND, "Patv"]].copy()
+    norm_data[WIND] = norm_data[WIND] / max(norm_data[WIND])
+    norm_data["Patv"] = norm_data["Patv"] / max(norm_data["Patv"])
+    clf.fit(norm_data)
+
+    y_label = clf.predict(norm_data)
+    good_idx = y_label == 1
+    bad_idx = y_label == -1
+    # =================================
+    good_data = data.loc[good_idx, :]
+    bad_data = data.loc[bad_idx, :]
+    print(" good_num:{} bad_num:{}".format(len(good_data), len(bad_data)))
+
+    return bad_idx
+
+def process_data_water(data):
+    now_abs_dir = os.path.dirname(os.path.realpath(__file__))
+    final_data = pd.DataFrame()
+    data_gp = data.groupby('TurbID')
+    for tid in range(1, 135):
+        data = data_gp.get_group(tid)
+        # 0 test_data.py非常粗暴的将nan填充了0，还原成nan，用步骤3上下文填充
+        col = list(data.columns)
+        col.remove("Tmstamp")
+        nan_idx = (data==0).sum(1)>3
+        if np.sum(nan_idx)!=0:
+            pass
+            # print(data.loc[nan_idx,col])
+        data.loc[nan_idx,col]=np.nan
+        # 1时间编码
+        time_set = np.unique(data["Tmstamp"].values)
+        time_set = sorted(time_set)
+        #print(time_set)
+        assert len(time_set) == 144
+        time_dict = {}
+        for i in range(len(time_set)):
+            time_dict[time_set[i]] = i
+        data["Tmstamp"] = data["Tmstamp"].replace(time_dict)
+        #print(time_dict)
+        # 3填充空值
+        data = data.fillna(method="ffill")
+        data = data.fillna(method="bfill")
+        #4官方标注的异常值
+        # (1)"patv"<0=========>=0
+        idx1 = data["Patv"] < 0
+        if np.sum(data.loc[idx1, ["Patv"]].values < -20) > 0:
+            raise NameError("有负值小于-20,{}".format(data.loc[data["Patv"] < -20, ["Patv"]]))
+        data.loc[idx1, ["Patv"]] = 0
+        # (2)Patv<=1 AND Wspd>2.5
+        # 因为这块没法做异常检测，所以阈值卡多一点
+        idx2 = ((data['Patv'] < 1) & (data['Wspd'] > 2.5))
+        #(3)修正其他数值
+        idx3_1 = data['Pab1'] > 89
+        data.loc[idx3_1, ["Pab1"]] = 89
+        idx3_2 = data['Pab2'] > 89
+        data.loc[idx3_2, ["Pab2"]] = 89
+        idx3_3 = data['Pab3'] > 89
+        data.loc[idx3_3, ["Pab3"]] = 89
+        idx4 = data['Wdir'] < -180
+        data.loc[idx4, ["Wdir"]] = -180
+        idx5 = data['Wdir'] > 180
+        data.loc[idx5, ["Wdir"]] = 180
+        idx6 = data['Ndir'] < -720
+        data.loc[idx6, ["Ndir"]] = -720
+        idx7 = data['Ndir'] > 720
+        data.loc[idx7, ["Ndir"]] = 720
+        SHOW = False
+        # 异常检测
+        idx_wash = isoforest(data, WIND="Wspd", C=0.05,show=SHOW)
+        #异常修正：lightgbm====================================
+        model_dir = os.path.join(now_abs_dir, 'repair_model', "repair_model_{}.pkl".format(tid))
+        repair_model = joblib.load(model_dir)
+        # col_name = list(data.columns)
+        # col_name.remove("Tmstamp")
+        # col_name.remove("Patv")
+        # all_anomaly_idx = idx1 | idx2 |idx3_1 | idx3_2 | idx3_3 | idx4 | idx5 | idx6 |idx7
+        col_name = ["Wspd"]
+        idx_pre = idx2 | idx_wash
+        tmp_data = data.loc[idx_pre, col_name]
+        pre = repair_model.predict(tmp_data)
+        data.loc[idx_pre, ["Patv"]] = pre
+
+        final_data = pd.concat([final_data, data])
+
+    return final_data
 
 class PGL4WPFDataset(Dataset):
     """
@@ -323,7 +412,7 @@ class TestPGL4WPFDataset(Dataset):
     Desc: Data preprocessing,
     """
 
-    def __init__(self, filename, capacity=134, day_len=24 * 6, output_path='./output/baseline/', test_x=False, del_feat_ind=0):
+    def __init__(self, filename, capacity=134, day_len=24 * 6, del_feat_ind=0):
 
         super().__init__()
         self.unit_size = day_len
@@ -331,16 +420,14 @@ class TestPGL4WPFDataset(Dataset):
         self.start_col = 0
         self.capacity = capacity
         self.filename = filename
-        self.output_path = output_path
-        self.test_x = test_x
         self.del_feat_ind = del_feat_ind
 
         self.__read_data__()
 
     def __read_data__(self):
         df_raw = pd.read_csv(self.filename)
-        if self.test_x:
-            df_raw = preprocess_data(df_raw, self.output_path)
+        if self.del_feat_ind in [3, 4,]:
+            df_raw = process_data_water(df_raw)
         df_data, raw_df_data = self.data_preprocess(df_raw)
         self.df_data = df_data
         self.raw_df_data = raw_df_data
@@ -360,15 +447,23 @@ class TestPGL4WPFDataset(Dataset):
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
             'Itmp' not in n and 'Ndir' not in n
         ]
-        if self.del_feat_ind in [1, 2, 3]:
+        if self.del_feat_ind in [1,]:
             feature_name.remove('Prtv')
+        if self.del_feat_ind in [3, 4]:
+            feature_name.remove('Prtv')
+            feature_name.remove('Pab1')
+            feature_name.remove('Pab2')
+            feature_name.remove('Pab3')
             
         feature_name.append("Patv")
 
         new_df_data = df_data[feature_name]
 
         log.info('adding time')
-        t = df_data['Tmstamp'].apply(func_add_t)
+        if self.del_feat_ind in [3, 4]:
+            t = df_data['Tmstamp'].apply(lambda x: x)
+        else:
+            t = df_data['Tmstamp'].apply(func_add_t)
         new_df_data.insert(0, 'time', t)
 
         weekday = df_data['Day'].apply(lambda x: x % 7)
