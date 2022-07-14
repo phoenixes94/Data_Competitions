@@ -48,8 +48,6 @@ def prep_env():
         "pred_file": "predict.py",
         "framework": "paddlepaddle",
         "is_debug": True,
-        # "input_len": 144,
-        # "output_len": 288,
         "model_0":{
             "input_len": 144,
             "output_len": 288,
@@ -75,30 +73,6 @@ def prep_env():
             "decoder_layers": 2,
         },
         "model_2":{
-            "input_len": 144,
-            "output_len": 288,
-            "capacity": 134,
-            # add para
-            "var_len": 5,
-            "hidden_dims": 128,
-            "dropout": 0.1,
-            "nhead": 8,
-            "encoder_layers": 2,
-            "decoder_layers": 2,
-        },
-        "model_3":{
-            "input_len": 144,
-            "output_len": 288,
-            "capacity": 134,
-            # add para
-            "var_len": 5,
-            "hidden_dims": 128,
-            "dropout": 0.5,
-            "nhead": 8,
-            "encoder_layers": 2,
-            "decoder_layers": 2,
-        },
-        "model_4":{
             "input_len": 432,
             "output_len": 288,
             "capacity": 134,
@@ -110,7 +84,31 @@ def prep_env():
             "encoder_layers": 2,
             "decoder_layers": 2,
         },
-        "num_model": 5,
+        "model_3":{
+            "input_len": 144,
+            "output_len": 288,
+            "capacity": 134,
+            # add para
+            "var_len": 2,
+            "hidden_dims": 128,
+            "dropout": 0.3,
+            "nhead": 8,
+            "encoder_layers": 2,
+            "decoder_layers": 2,
+        },
+        "model_4":{
+            "input_len": 144,
+            "output_len": 288,
+            "capacity": 134,
+            # add para
+            "var_len": 2,
+            "hidden_dims": 256,
+            "dropout": 0.5,
+            "nhead": 8,
+            "encoder_layers": 2,
+            "decoder_layers": 2,
+        },
+        "num_model": 4,
     }
     ###
     # Prepare the GPUs

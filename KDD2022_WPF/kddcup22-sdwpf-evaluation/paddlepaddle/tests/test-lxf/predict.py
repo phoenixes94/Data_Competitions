@@ -54,7 +54,7 @@ def load_data(index):
 
 
 @paddle.no_grad()
-def predict(settings, index):  # , valid_data, test_data):
+def predict(settings, index, test_x_ds):  # , valid_data, test_data):
     """
     Desc:
         Forecasting the wind power in a naive manner
@@ -77,13 +77,10 @@ def predict(settings, index):  # , valid_data, test_data):
     print(turb_setting)
     model = WPFModel(config=turb_setting)
 
-    output_path = os.path.join(settings["checkpoints"], "{}".format(index))
     print(os.path.join(settings["checkpoints"], "{}".format(index), "checkpoint"))
     global_step = load_model(os.path.join(settings["checkpoints"], "{}".format(index), "checkpoint"), model)
     model.eval()
 
-    test_x_f = settings["path_to_test_x"]
-    test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=output_path, test_x=False, del_feat_ind=index)
     test_x = paddle.to_tensor(test_x_ds.get_data()[:, :,  -turb_setting["input_len"]:, :], dtype="float32")
     test_y = paddle.ones(shape=[1, 134, turb_setting["output_len"], 12], dtype="float32")
 
@@ -113,10 +110,25 @@ def forecast(settings):
     Returns:
         The predictions as a tensor \in R^{134 * 288 * 1}
     """
-    # i = 1
-    # prediction = [0 for i in range(settings["num_model"])]
-    # for i in range(settings["num_model"]):
-    #     prediction[i] = predict(settings, i)  # , valid_data, test_data)
+    # data process for save time
+    test_x_f = settings["path_to_test_x"]
+    test_x_ds_full = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=0)
+    test_x_ds_del_ptrv = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=1)
+    test_x_ds_del_4p = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=3)
+
+    prediction = [0 for _ in range(settings["num_model"])]
+    for i in range(settings["num_model"]):
+        if i in [0, 2]:
+            test_x_ds = test_x_ds_full
+        elif i in [1,]:
+            test_x_ds = test_x_ds_del_ptrv
+        else:
+            # [3, 4]
+            test_x_ds = test_x_ds_del_4p
+        prediction[i] = predict(settings, i, test_x_ds)
+    
+    predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
+                    1.0 * prediction[3] +  1.0 * prediction[4]) / 5
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
@@ -137,15 +149,18 @@ def forecast(settings):
     #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5] + 1 * prediction[6] + 1 * prediction[7] + \
     #                 1 * prediction[8] + 1 * prediction[9]) / 10
 
-    # predictions = predict(settings, 3)
+    # predictions = predict(settings, 4)
 
     # predictions = np.concatenate((predict(settings, 1)[:, :144, :], predict(settings, 4)[:, 144:, :]), axis=1)
+    # predictions = (1.25 * predict(settings, 0) + 0.75 * predict(settings, 1) + 1 * predict(settings, 4) ) / 3
 
-    predictions = (predict(settings, 0) + predict(settings, 1)) / 2
+    # predictions = (1.35 * predict(settings, 0) + 0.55 * predict(settings, 1) + 1.1 * predict(settings, 2) +\
+    #                 1.0 * predict(settings, 3) + 1.0 * predict(settings, 4) ) / 5
     # predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
 
     # predictions = predict(settings, 0)[:, :144, :144]
     print('predictions.shape: ', predictions.shape)
+
     return predictions
 
 
