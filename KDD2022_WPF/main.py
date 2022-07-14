@@ -330,7 +330,7 @@ if __name__ == "__main__":
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
     _create_if_not_exist(config.output_path + '/')
 
-    paddle.device.set_device("gpu:2")
+    paddle.device.set_device("gpu:5")
     print(paddle.device.get_device())
 
     print(config)

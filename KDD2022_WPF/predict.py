@@ -55,7 +55,7 @@ def predict(config, train_data):  # , valid_data, test_data):
 
     maes, rmses = [], []
     for i, (test_x_f, test_y_f) in enumerate(zip(test_x, test_y)):
-        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=config.output_path, test_x=False)
+        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=config.output_path, test_x=True)
 
         test_y_ds = TestPGL4WPFDataset(filename=test_y_f, output_path=config.output_path, test_x=False)
 

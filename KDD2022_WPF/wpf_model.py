@@ -346,7 +346,10 @@ class WPFModel(nn.Layer):
             layer._epsilon = 1e-12
 
     def forward(self, batch_x, batch_y, data_mean, data_scale, graph=None):
-        # [bz, 134, 144, 12]
+        '''
+        batch_x [bz, 134, 144, 12]
+        batch_y [bz, 134, 288, 12]
+        '''
         # batch_x = batch_x[:, :, ::2, :]
         bz, id_len, input_len, var_len = batch_x.shape
 
@@ -355,8 +358,8 @@ class WPFModel(nn.Layer):
         _, _, output_len, _ = batch_y.shape
         var_len = var_len - 2
 
-        time_id = batch_x[:, 0, :, 1].astype("int32")
         weekday_id = batch_x[:, 0, :, 0].astype("int32")
+        time_id = batch_x[:, 0, :, 1].astype("int32")
 
         batch_x = batch_x[:, :, :, 2:]
         batch_x = (batch_x - data_mean) / data_scale
@@ -372,32 +375,33 @@ class WPFModel(nn.Layer):
         batch_y_weekday_emb = self.w_dec_emb(
             paddle.concat([weekday_id, y_weekday_id], 1))
 
-        # 时间和星期特征融合融入model？
+        # 时间和星期特征融合融入model？ [bz, 144, 134, 12]
         batch_x = paddle.transpose(batch_x, [0, 2, 1, 3])
 
-        batch_pred_trend = paddle.mean(batch_x, 1, keepdim=True)[:, :, :, -1]
-        batch_pred_trend = paddle.tile(batch_pred_trend, [1, output_len, 1])
+        # trend_init for decoder init
+        batch_pred_trend = paddle.mean(batch_x, 1, keepdim=True)[:, :, :, -1]   #[bz, 1, 134]
+        batch_pred_trend = paddle.tile(batch_pred_trend, [1, output_len, 1])   #[bz, 288, 134]
         batch_pred_trend = paddle.concat(
             [self.decomp(batch_x[:, :, :, -1])[0], batch_pred_trend], 1)
-
-        batch_x = paddle.reshape(batch_x, [bz, input_len, var_len * id_len])
-        _, season_init = self.decomp(batch_x)
+        # seasonal_init for decoder init
+        batch_x = paddle.reshape(batch_x, [bz, input_len, var_len * id_len])  #[bz, 144, 5 * 134]
+        _, season_init = self.decomp(batch_x)  #[bz, 288, 134]
 
         batch_pred_season = paddle.zeros(
-            [bz, output_len, var_len * id_len], dtype="float32")
+            [bz, output_len, var_len * id_len], dtype="float32")   #[bz, 288, 5 * 134]
         batch_pred_season = paddle.concat([season_init, batch_pred_season], 1)
 
+        # enc
         batch_x = self.st_conv_encoder(batch_x, batch_graph) + self.pos_emb
-
+        batch_x = self.enc(batch_x)
+        # dec
         batch_pred_season = self.st_conv_decoder(
             batch_pred_season, batch_graph) + self.pos_dec_emb
-
-        batch_x = self.enc(batch_x)
-
         batch_x_pred, batch_x_trends = self.dec(batch_pred_season,
                                                 batch_pred_trend, batch_x)
         batch_x_pred = self.pred_nn(batch_x_pred)
-
+        
+        # final
         pred_y = batch_x_pred + batch_x_trends
         pred_y = paddle.transpose(pred_y, [0, 2, 1])
         pred_y = pred_y[:, :, -output_len:]
