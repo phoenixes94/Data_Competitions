@@ -114,7 +114,8 @@ def forecast(settings):
     test_x_f = settings["path_to_test_x"]
     test_x_ds_full = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=0)
     test_x_ds_del_ptrv = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=1)
-    test_x_ds_del_4p = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=3)
+    test_x_ds_clear_del4p = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=3)
+    test_x_ds_clear_delp = TestPGL4WPFDataset(filename=test_x_f, del_feat_ind=5)
 
     prediction = [0 for _ in range(settings["num_model"])]
     for i in range(settings["num_model"]):
@@ -122,13 +123,17 @@ def forecast(settings):
             test_x_ds = test_x_ds_full
         elif i in [1,]:
             test_x_ds = test_x_ds_del_ptrv
+        elif i in [3, 4]:
+            test_x_ds = test_x_ds_clear_del4p
         else:
-            # [3, 4]
-            test_x_ds = test_x_ds_del_4p
+            test_x_ds = test_x_ds_clear_delp
         prediction[i] = predict(settings, i, test_x_ds)
     
-    predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
-                    1.0 * prediction[3] +  1.0 * prediction[4]) / 5
+    # predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
+    #                 1.0 * prediction[3] +  1.0 * prediction[4]) / 5
+
+    # predictions =  predict(settings, 4, test_x_ds_del_p)
+    predictions = prediction[5]
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
@@ -148,8 +153,6 @@ def forecast(settings):
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
     #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5] + 1 * prediction[6] + 1 * prediction[7] + \
     #                 1 * prediction[8] + 1 * prediction[9]) / 10
-
-    # predictions = predict(settings, 4)
 
     # predictions = np.concatenate((predict(settings, 1)[:, :144, :], predict(settings, 4)[:, 144:, :]), axis=1)
     # predictions = (1.25 * predict(settings, 0) + 0.75 * predict(settings, 1) + 1 * predict(settings, 4) ) / 3

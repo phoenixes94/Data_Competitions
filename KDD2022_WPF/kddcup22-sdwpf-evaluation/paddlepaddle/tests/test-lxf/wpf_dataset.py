@@ -426,7 +426,7 @@ class TestPGL4WPFDataset(Dataset):
 
     def __read_data__(self):
         df_raw = pd.read_csv(self.filename)
-        if self.del_feat_ind in [3, 4,]:
+        if self.del_feat_ind in [3, 5,]:
             df_raw = process_data_water(df_raw)
         df_data, raw_df_data = self.data_preprocess(df_raw)
         self.df_data = df_data
@@ -447,9 +447,9 @@ class TestPGL4WPFDataset(Dataset):
             'TurbID' not in n and 'Wdir' not in n and 'Etmp' not in n and 
             'Itmp' not in n and 'Ndir' not in n
         ]
-        if self.del_feat_ind in [1,]:
+        if self.del_feat_ind in [1, 5]:
             feature_name.remove('Prtv')
-        if self.del_feat_ind in [3, 4]:
+        if self.del_feat_ind in [3,]:
             feature_name.remove('Prtv')
             feature_name.remove('Pab1')
             feature_name.remove('Pab2')
