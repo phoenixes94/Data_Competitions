@@ -442,7 +442,7 @@ class TestPGL4WPFDataset(Dataset):
     Desc: Data preprocessing,
     """
 
-    def __init__(self, filename, capacity=134, day_len=24 * 6, output_path='./output/baseline/', test_x=False):
+    def __init__(self, filename, capacity=134, day_len=24 * 6, test_x=False):
 
         super().__init__()
         self.unit_size = day_len
@@ -450,7 +450,6 @@ class TestPGL4WPFDataset(Dataset):
         self.start_col = 0
         self.capacity = capacity
         self.filename = filename
-        self.output_path = output_path
         self.test_x = test_x
 
         self.__read_data__()
@@ -491,10 +490,10 @@ class TestPGL4WPFDataset(Dataset):
         new_df_data = df_data[feature_name]
 
         log.info('adding time')
-        if not self.test_x:
-            t = df_data['Tmstamp'].apply(func_add_t)
-        else:
+        if self.test_x:
             t = df_data['Tmstamp'].apply(lambda x: x)
+        else:
+            t = df_data['Tmstamp'].apply(func_add_t)
         new_df_data.insert(0, 'time', t)
 
         weekday = df_data['Day'].apply(lambda x: x % 7)
