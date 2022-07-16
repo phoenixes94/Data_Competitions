@@ -114,8 +114,8 @@ def prep_env():
             "capacity": 134,
             # add para
             "var_len": 5,
-            "hidden_dims": 128,
-            "dropout": 0.3,
+            "hidden_dims": 256,
+            "dropout": 0.5,
             "nhead": 8,
             "encoder_layers": 2,
             "decoder_layers": 2,

@@ -129,11 +129,11 @@ def forecast(settings):
             test_x_ds = test_x_ds_clear_delp
         prediction[i] = predict(settings, i, test_x_ds)
     
-    # predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
-    #                 1.0 * prediction[3] +  1.0 * prediction[4]) / 5
+    predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
+                    1.0 * prediction[3] + 1.0 * prediction[4] + 1.0 * prediction[5]) / 6
 
-    # predictions =  predict(settings, 4, test_x_ds_del_p)
-    predictions = prediction[5]
+    # predictions = (predict(settings, 3, test_x_ds_clear_del4p) + predict(settings, 4, test_x_ds_clear_del4p)) / 2
+    # predictions = prediction[5]
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \

@@ -460,7 +460,7 @@ class TestPGL4WPFDataset(Dataset):
         new_df_data = df_data[feature_name]
 
         log.info('adding time')
-        if self.del_feat_ind in [3, 4]:
+        if self.del_feat_ind in [3, 5]:
             t = df_data['Tmstamp'].apply(lambda x: x)
         else:
             t = df_data['Tmstamp'].apply(func_add_t)
