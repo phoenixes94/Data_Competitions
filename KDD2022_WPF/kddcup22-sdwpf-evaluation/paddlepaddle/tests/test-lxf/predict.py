@@ -29,7 +29,6 @@ from paddle.io import DataLoader
 # import random
 
 from wpf_dataset import PGL4WPFDataset, TestPGL4WPFDataset
-from wpf_model import WPFModel
 # import optimization as optim
 # from metrics import regressor_scores, regressor_detailed_scores
 from utils import save_model, _create_if_not_exist, load_model
@@ -75,6 +74,10 @@ def predict(settings, index, test_x_ds):  # , valid_data, test_data):
 
     turb_setting = settings["model_{}".format(index)]
     print(turb_setting)
+    if index in [6, 7]:
+        from wpf_model_st import WPFModel
+    else:
+        from wpf_model import WPFModel
     model = WPFModel(config=turb_setting)
 
     print(os.path.join(settings["checkpoints"], "{}".format(index), "checkpoint"))
@@ -130,10 +133,11 @@ def forecast(settings):
         prediction[i] = predict(settings, i, test_x_ds)
     
     predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
-                    1.0 * prediction[3] + 1.0 * prediction[4] + 1.0 * prediction[5]) / 6
+                    1.0 * prediction[3] + 1.0 * prediction[4] + 1.0 * prediction[5] + \
+                    1.0 * prediction[6] + 1.0 * prediction[7]) / 8
 
-    # predictions = (predict(settings, 3, test_x_ds_clear_del4p) + predict(settings, 4, test_x_ds_clear_del4p)) / 2
-    # predictions = prediction[5]
+    # predictions = predict(settings, 7, test_x_ds_clear_delp)
+    # predictions = prediction[6]
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
     # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
