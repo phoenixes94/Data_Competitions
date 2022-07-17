@@ -159,7 +159,7 @@ def isoforest(data, WIND, C=0.05, show=False):
     # =================================
     good_data = data.loc[good_idx, :]
     bad_data = data.loc[bad_idx, :]
-    print(" good_num:{} bad_num:{}".format(len(good_data), len(bad_data)))
+    # print(" good_num:{} bad_num:{}".format(len(good_data), len(bad_data)))
 
     return bad_idx
 
