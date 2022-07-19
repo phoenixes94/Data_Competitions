@@ -139,12 +139,49 @@ def prep_env():
             # add para
             "var_len": 5,
             "hidden_dims": 512,
+            "dropout": 0.5,
+            "nhead": 8,
+            "encoder_layers": 2,
+            "decoder_layers": 1,
+        },
+        "model_8":{
+            "input_len": 144,
+            "output_len": 288,
+            "capacity": 134,
+            # add para
+            "var_len": 2,
+            "hidden_dims": 128,
             "dropout": 0.3,
+            "nhead": 8,
+            "encoder_layers": 2,
+            "decoder_layers": 2,
+        },
+        "model_9":{
+            "input_len": 144,
+            "output_len": 288,
+            "capacity": 134,
+            # add para
+            "var_len": 5,
+            "hidden_dims": 128,
+            "dropout": 0.1,
+            "nhead": 8,
+            "encoder_layers": 2,
+            "decoder_layers": 1,
+            "factor": 8,
+        },
+        "model_10":{
+            "input_len": 144,
+            "output_len": 288,
+            "capacity": 134,
+            # add para
+            "var_len": 5,
+            "hidden_dims": 256,
+            "dropout": 0.1,
             "nhead": 8,
             "encoder_layers": 3,
             "decoder_layers": 3,
         },
-        "num_model": 8,
+        "num_model": 11,
     }
     ###
     # Prepare the GPUs
