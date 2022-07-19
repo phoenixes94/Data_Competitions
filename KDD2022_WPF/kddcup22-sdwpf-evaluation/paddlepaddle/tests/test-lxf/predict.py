@@ -74,8 +74,10 @@ def predict(settings, index, test_x_ds):  # , valid_data, test_data):
 
     turb_setting = settings["model_{}".format(index)]
     print(turb_setting)
-    if index in [6, 7]:
+    if index in [6, 7, 8, 10]:
         from wpf_model_st import WPFModel
+    elif index in [9, ]:
+        from wpf_model_ac import WPFModel
     else:
         from wpf_model import WPFModel
     model = WPFModel(config=turb_setting)
@@ -103,6 +105,24 @@ def predict(settings, index, test_x_ds):  # , valid_data, test_data):
     return pred_y
 
 
+def better_than_median(inputs, axis):
+    """Compute the mean of the predictions if there are no outliers,
+    or the median if there are outliers.
+
+    Parameter: inputs = ndarray of shape (n_samples, n_folds)"""
+    tur_num, nums, k = inputs.shape
+    inputs = inputs.reshape(-1, k)
+    spread = inputs.max(axis=axis) - inputs.min(axis=axis) 
+    spread_lim = 100
+    print(f"Inliers:  {(spread < spread_lim).sum():7} -> compute mean")
+    print(f"Outliers: {(spread >= spread_lim).sum():7} -> compute median")
+    print(f"Total:    {len(inputs):7}")
+    data = np.where(spread < spread_lim,
+                    np.mean(inputs, axis=axis),
+                    np.median(inputs, axis=axis))
+    return data.reshape(tur_num, nums, -1)
+
+
 def forecast(settings):
     # type: (dict) -> np.ndarray
     """
@@ -124,9 +144,9 @@ def forecast(settings):
     for i in range(settings["num_model"]):
         if i in [0, 2]:
             test_x_ds = test_x_ds_full
-        elif i in [1,]:
+        elif i in [1, 7]:
             test_x_ds = test_x_ds_del_ptrv
-        elif i in [3, 4]:
+        elif i in [3, 4, 8]:
             test_x_ds = test_x_ds_clear_del4p
         else:
             test_x_ds = test_x_ds_clear_delp
@@ -134,9 +154,10 @@ def forecast(settings):
     
     predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
                     1.0 * prediction[3] + 1.0 * prediction[4] + 1.0 * prediction[5] + \
-                    1.0 * prediction[6] + 1.0 * prediction[7]) / 8
+                    1.0 * prediction[6] + 1.0 * prediction[7] + 1.0 * prediction[8] + \
+                    1.0 * prediction[9] + 1.0 * prediction[10] ) / 11
 
-    # predictions = predict(settings, 7, test_x_ds_clear_delp)
+    # predictions = predict(settings, 10, test_x_ds_clear_delp)
     # predictions = prediction[6]
 
     # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
@@ -165,7 +186,24 @@ def forecast(settings):
     #                 1.0 * predict(settings, 3) + 1.0 * predict(settings, 4) ) / 5
     # predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
 
-    # predictions = predict(settings, 0)[:, :144, :144]
+    #1.step 1: save prediction to pkl
+    # joblib.dump(prediction, './multi_predictions.pkl')
+
+    #2. step 2: calculate weights -> python ridgecv.py
+
+    #3.step 3:
+    # predictions = np.concatenate(prediction, axis=-1).reshape(134*288, -1)
+    # estimater = joblib.load('./ensemble_model.pkl')
+    # predictions = estimater.predict(predictions)
+    # predictions = predictions.reshape(134, 288, 1)
+
+    #another try:
+    predictions = prediction[0]
+    for i in range(1, len(prediction)):
+        predictions = np.concatenate([predictions, prediction[i]], axis=-1)
+    predictions = better_than_median(predictions, -1)
+    predictions = np.median(predictions, axis=-1, keepdims=True)
+
     print('predictions.shape: ', predictions.shape)
 
     return predictions
