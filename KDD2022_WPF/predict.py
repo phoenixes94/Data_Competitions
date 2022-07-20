@@ -17,6 +17,7 @@ import glob
 import argparse
 import paddle
 import paddle.nn.functional as F
+from sympy import true
 import tqdm
 import yaml
 import pickle
@@ -31,6 +32,7 @@ import random
 import loss as loss_factory
 from wpf_dataset import PGL4WPFDataset, TestPGL4WPFDataset
 from wpf_model import WPFModel
+# from wpf_model_ac import WPFModel
 import optimization as optim
 from metrics import regressor_scores, regressor_detailed_scores
 from utils import save_model, _create_if_not_exist, load_model
@@ -55,9 +57,9 @@ def predict(config, train_data):  # , valid_data, test_data):
 
     maes, rmses = [], []
     for i, (test_x_f, test_y_f) in enumerate(zip(test_x, test_y)):
-        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, output_path=config.output_path, test_x=True)
+        test_x_ds = TestPGL4WPFDataset(filename=test_x_f, test_x=True)
 
-        test_y_ds = TestPGL4WPFDataset(filename=test_y_f, output_path=config.output_path, test_x=False)
+        test_y_ds = TestPGL4WPFDataset(filename=test_y_f, test_x=False)
 
         test_x = paddle.to_tensor(
             test_x_ds.get_data()[:, :, -config.input_len:, :], dtype="float32")
@@ -121,7 +123,7 @@ def save_std_mean(train_data, output_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='main')
-    parser.add_argument("--conf", type=str, default="./config.yaml")
+    parser.add_argument("--conf", type=str, default="./config/config_clear_st_18.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 
@@ -138,5 +140,5 @@ if __name__ == "__main__":
         test_days=config.test_days,
         output_path=config.output_path)
 
-    predict(config, train_data)  # , valid_data, test_data)
+    predict(config, train_data)
     save_std_mean(train_data, config.output_path)

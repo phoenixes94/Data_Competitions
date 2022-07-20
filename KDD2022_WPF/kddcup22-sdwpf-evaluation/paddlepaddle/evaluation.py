@@ -101,7 +101,7 @@ REQUIRED_ENV_VARS = [
 SUPPORTED_FRAMEWORKS = [
     "base", "paddlepaddle", "pytorch", "tensorflow"
 ]
-NUM_MAX_RUNS = 14
+NUM_MAX_RUNS = 194
 MAX_TIMEOUT = 3600 * 10     # 10 hours
 MIN_TIME = 3                # 3 secs
 MIN_NOISE_LEVEL = 0.001     # 0.1 %
@@ -346,14 +346,14 @@ def eval_local(submit_file):
 
 
 if __name__ == "__main__":
-    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0710-1.zip"
+    path = "./kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0718-1.zip"
     path_loacal = "./test-lxf"
+
+    # path_loacal = '/home/user/david/kdd/Data_Competitions/KDD2022_WPF/kddcup22-sdwpf-evaluation/paddlepaddle/tests/kddcup_qiaosu_submission'
 
     paddle.device.set_device("gpu:4")
     print(paddle.device.get_device())
 
-    # for Zipfile
     # eval(path)
-
-    # for Folder
+    
     eval_local(path_loacal)

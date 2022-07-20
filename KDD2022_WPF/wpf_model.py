@@ -37,6 +37,8 @@ class SeriesDecomp(nn.Layer):
         self.kernel_size = kernel_size
 
     def forward(self, x):
+        '''return seasonal_init, trend_init
+        '''
         t_x = paddle.transpose(x, [0, 2, 1])
         mean_x = F.avg_pool1d(
             t_x, self.kernel_size, stride=1, padding="SAME", exclusive=False)
@@ -382,10 +384,10 @@ class WPFModel(nn.Layer):
         batch_pred_trend = paddle.mean(batch_x, 1, keepdim=True)[:, :, :, -1]   #[bz, 1, 134]
         batch_pred_trend = paddle.tile(batch_pred_trend, [1, output_len, 1])   #[bz, 288, 134]
         batch_pred_trend = paddle.concat(
-            [self.decomp(batch_x[:, :, :, -1])[0], batch_pred_trend], 1)
+            [self.decomp(batch_x[:, :, :, -1])[1], batch_pred_trend], 1)
         # seasonal_init for decoder init
         batch_x = paddle.reshape(batch_x, [bz, input_len, var_len * id_len])  #[bz, 144, 5 * 134]
-        _, season_init = self.decomp(batch_x)  #[bz, 288, 134]
+        season_init, _ = self.decomp(batch_x)  #[bz, 288, 134]
 
         batch_pred_season = paddle.zeros(
             [bz, output_len, var_len * id_len], dtype="float32")   #[bz, 288, 5 * 134]

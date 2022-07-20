@@ -32,6 +32,7 @@ import random
 import loss as loss_factory
 from wpf_dataset import PGL4WPFDataset
 from wpf_model import WPFModel
+# from wpf_model_ac import WPFModel
 import optimization as optim
 from metrics import regressor_scores, regressor_detailed_scores
 from utils import save_model, _create_if_not_exist, load_model
@@ -189,7 +190,8 @@ def train_and_evaluate(config, train_data, valid_data, test_data=0, print_info=T
             #     graph=graph)
             # log.info("Test " + str(dict(test_r)))
             # test_records.append(test_r)
-
+            
+            # save_model(config.output_path, model, steps=epoch)
             if best_score == valid_r['score']:
                 patient = 0
                 save_model(config.output_path, model, steps=epoch)
@@ -325,12 +327,12 @@ def seed(seed=42000):
 if __name__ == "__main__":
     seed(2022)
     parser = argparse.ArgumentParser(description='main')
-    parser.add_argument("--conf", type=str, default="./config.yaml")
+    parser.add_argument("--conf", type=str, default="./config/config_clear_st_18.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
     _create_if_not_exist(config.output_path + '/')
 
-    paddle.device.set_device("gpu:5")
+    paddle.device.set_device("gpu:4")
     print(paddle.device.get_device())
 
     print(config)

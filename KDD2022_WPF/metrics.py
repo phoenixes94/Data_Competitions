@@ -170,7 +170,13 @@ def turbine_scores(pred, gt, raw_data, examine_len, stride=1):
     nan_cond = pd.isna(raw_data).any(axis=1)
 
     invalid_cond = (raw_data['Patv'] < 0) | \
-                   ((raw_data['Patv'] == 0) & (raw_data['Wspd'] > 2.5)) |\
+                   ((raw_data['Patv'] == 0) & (raw_data['Wspd'] > 2.5)) | \
+                   ((raw_data['Pab1'] > 89) | (raw_data['Pab2'] > 89) | (raw_data['Pab3'] > 89)) 
+                #    ((raw_data['Wdir'] < -180) | (raw_data['Wdir'] > 180) | (raw_data['Ndir'] < -720) | \
+                #     (raw_data['Ndir'] > 720))
+
+    invalid_cond = (raw_data['Patv'] < 0) | \
+                   ((raw_data['Patv'] == 0) & (raw_data['Wspd'] > 2.5)) | \
                    ((raw_data['Pab1'] > 89) | (raw_data['Pab2'] > 89) | (raw_data['Pab3'] > 89)) | \
                    ((raw_data['Wdir'] < -180) | (raw_data['Wdir'] > 180) | (raw_data['Ndir'] < -720) | \
                     (raw_data['Ndir'] > 720))

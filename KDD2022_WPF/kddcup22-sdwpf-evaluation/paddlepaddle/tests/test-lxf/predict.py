@@ -24,7 +24,7 @@ import numpy as np
 from easydict import EasyDict as edict
 
 import pgl
-from pgl.utils.logger import log
+# from pgl.utils.logger import log
 from paddle.io import DataLoader
 # import random
 
@@ -74,9 +74,9 @@ def predict(settings, index, test_x_ds):  # , valid_data, test_data):
 
     turb_setting = settings["model_{}".format(index)]
     print(turb_setting)
-    if index in [6, 7, 8, 10]:
+    if index in [6, 7, 8, 10, 12]:
         from wpf_model_st import WPFModel
-    elif index in [9, ]:
+    elif index in [9, 11]:
         from wpf_model_ac import WPFModel
     else:
         from wpf_model import WPFModel
@@ -113,7 +113,7 @@ def better_than_median(inputs, axis):
     tur_num, nums, k = inputs.shape
     inputs = inputs.reshape(-1, k)
     spread = inputs.max(axis=axis) - inputs.min(axis=axis) 
-    spread_lim = 100
+    spread_lim = 250
     print(f"Inliers:  {(spread < spread_lim).sum():7} -> compute mean")
     print(f"Outliers: {(spread >= spread_lim).sum():7} -> compute median")
     print(f"Total:    {len(inputs):7}")
@@ -155,36 +155,11 @@ def forecast(settings):
     predictions = (1.35 * prediction[0] + 0.55 * prediction[1] + 1.1 * prediction[2] +\
                     1.0 * prediction[3] + 1.0 * prediction[4] + 1.0 * prediction[5] + \
                     1.0 * prediction[6] + 1.0 * prediction[7] + 1.0 * prediction[8] + \
-                    1.0 * prediction[9] + 1.0 * prediction[10] ) / 11
+                    1.0 * prediction[9] + 1.0 * prediction[10] + 1.0 * prediction[11] + \
+                    1.0 * prediction[12] ) / 13
 
-    # predictions = predict(settings, 10, test_x_ds_clear_delp)
-    # predictions = prediction[6]
+    # predictions = predict(settings, 12, test_x_ds_clear_delp)
 
-    # RMSE: 47.17026989334526, MAE: 39.486272397359414, Score: 43.32827114535233, and Accuracy: 60.6367%
-    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3]) / 7
-
-    # RMSE: 47.22517822241438, MAE: 39.24244758937393, Score: 43.233812905894155, and Accuracy: 60.3170%
-    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[3] + 1 * prediction[3]) / 6
-
-    # 全部6个
-    #  RMSE: 47.930290857729105, MAE: 38.44831633803584, Score: 43.18930359788247, and Accuracy: 58.5734%
-    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5]) / 6
-
-    # 全部5个
-    # RMSE: 47.81502660818225, MAE: 38.5331096761427, Score: 43.174068142162476, and Accuracy: 58.8305%
-    # predictions = ( 1 * prediction[0] + 1 * prediction[1] + 1 * prediction[2] + \
-    #                 1 * prediction[3] + 1 * prediction[4] + 1 * prediction[5] + 1 * prediction[6] + 1 * prediction[7] + \
-    #                 1 * prediction[8] + 1 * prediction[9]) / 10
-
-    # predictions = np.concatenate((predict(settings, 1)[:, :144, :], predict(settings, 4)[:, 144:, :]), axis=1)
-    # predictions = (1.25 * predict(settings, 0) + 0.75 * predict(settings, 1) + 1 * predict(settings, 4) ) / 3
-
-    # predictions = (1.35 * predict(settings, 0) + 0.55 * predict(settings, 1) + 1.1 * predict(settings, 2) +\
-    #                 1.0 * predict(settings, 3) + 1.0 * predict(settings, 4) ) / 5
-    # predictions = np.concatenate( ((predictions[:, :144, :] + predict(settings, 1)[:, :144, :])/2, predictions[:, 144:, :]), axis=1) 
 
     #1.step 1: save prediction to pkl
     # joblib.dump(prediction, './multi_predictions.pkl')
@@ -198,11 +173,11 @@ def forecast(settings):
     # predictions = predictions.reshape(134, 288, 1)
 
     #another try:
-    predictions = prediction[0]
-    for i in range(1, len(prediction)):
-        predictions = np.concatenate([predictions, prediction[i]], axis=-1)
-    predictions = better_than_median(predictions, -1)
-    predictions = np.median(predictions, axis=-1, keepdims=True)
+    # predictions = prediction[0]
+    # for i in range(1, len(prediction)):
+    #     predictions = np.concatenate([predictions, prediction[i]], axis=-1)
+    # predictions = better_than_median(predictions, -1)
+    # predictions = np.median(predictions, axis=-1, keepdims=True)
 
     print('predictions.shape: ', predictions.shape)
 

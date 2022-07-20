@@ -61,9 +61,9 @@ class FilterMSELoss(nn.Layer):
         # Remove bad input
         cond1 = raw[:, :, :, col_names["Patv"]] < 0
 
-        cond2 = raw[:, :, :, col_names["Pab1"]] > 89
-        cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab2"]] > 89)
-        cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab3"]] > 89)
+        # cond2 = raw[:, :, :, col_names["Pab1"]] > 89
+        # cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab2"]] > 89)
+        # cond2 = paddle.logical_or(cond2, raw[:, :, :, col_names["Pab3"]] > 89)
 
         # cond2 = paddle.logical_or(cond2,
         #                           raw[:, :, :, col_names["Wdir"]] < -180)

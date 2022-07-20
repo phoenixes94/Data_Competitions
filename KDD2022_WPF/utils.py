@@ -32,7 +32,7 @@ def save_model(output_path,
                steps=None,
                opt=None,
                lr_scheduler=None,
-               max_ckpt=2):
+               max_ckpt=3):
     if paddle.distributed.get_rank() == 0:
         output_dir = os.path.join(output_path, "model_%d" % steps)
         if not os.path.exists(output_dir):
