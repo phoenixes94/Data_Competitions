@@ -414,8 +414,9 @@ class PGL4WPFDataset(Dataset):
 
         data_x = data[:, border1:border2, :]
         data_edge = data[:, border1s[0]:border2s[0], -1]
-        edge_w = np.corrcoef(data_edge)
+        edge_w = np.corrcoef(data_edge)  # (134, 134)
 
+        # 根据persion相关系数，计算前topK个相关的点，一共是134 * 134，最后取其中536个作为连接边
         k = 5
         topk_indices = np.argpartition(edge_w, -k, axis=1)[:, -k:]
         rows, _ = np.indices((edge_w.shape[0], k))
@@ -423,7 +424,8 @@ class PGL4WPFDataset(Dataset):
 
         row, col = np.where(edge_w > kth_vals)
         edges = np.concatenate([row.reshape([-1, 1]), col.reshape([-1, 1])],
-                               -1)
+                               -1)  # (536, 2)
+        print(edges.shape)
         # for online test
         if self.flag == "train":
             import pickle
