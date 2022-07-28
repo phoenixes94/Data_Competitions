@@ -219,7 +219,7 @@ def visualize_prediction(input_batch, pred_batch, gold_batch, tag):
                 [input_batch[288 * (i - 1)], pred_batch[288 * (i - 1)]]),
             label="pred")
         ax.legend()
-    plt.savefig(tag + "_vis.png")
+    plt.savefig('./visualize/' + tag + "_vis.png")
     plt.close()
 
 
