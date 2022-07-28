@@ -1,4 +1,5 @@
 output
+test.ipynb
 __pycache__
 /kddcup22-sdwpf-evaluation/paddlepaddle/__pycache__
 /kddcup22-sdwpf-evaluation/paddlepaddle/__pycache__
@@ -20,8 +21,6 @@ kddcup22-sdwpf-evaluation/test_y_raw.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-1.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-test.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719.zip
-
-test.ipynb
 
 **/data/*
 !**/data/preprocessed.ipynb
