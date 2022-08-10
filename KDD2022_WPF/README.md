@@ -1,4 +1,4 @@
-# Team zhangshijin Baidu KDD CUP 2022 Spatial Dynamic Wind Power Forecasting Challenge Technical Report
+# Team zhangshijin WPFormer: A Spatio-Temporal Graph Transformer with Auto-Correlation for Wind Power Prediction
 ## 1.Introduction
 The use of wind power, a pollution-free and renewable form of
 energy, to generate electricity has attracted increasing attention in
@@ -67,7 +67,7 @@ mechanism for sequence-level connections, multi-head attention from original tra
 
 <img src="./fig/WPFformer.png" alt="The Model Architecture of WPF" width="600">
 
-## 7.Point-by-point prediction based on tree model (P2Ptree)
+## 7.Point-by-point prediction based on tree model (POPtree)
 
 Besides building a deep learning model with PaddlePaddle to predict future wind power generation, we also build the LightGBM model to reduce prediction variance and increase generability by
 ensembling different models.
