@@ -6,16 +6,16 @@ __pycache__
 
 config/wpf
 
-P2Ptree/raw_data/wtbdata_245days.csv
-P2Ptree/data_del5_SingleLgbRepair
-P2Ptree/checkpoints/mlgb
-P2Ptree/kddcup22_sdwpf_evaluation/qiaosu
-P2Ptree/kddcup22_sdwpf_evaluation/paddlepaddle
-P2Ptree/kddcup22_sdwpf_evaluation/multi_frame
-P2Ptree/kddcup22_sdwpf_evaluation/test_x.zip
-P2Ptree/kddcup22_sdwpf_evaluation/test_y.zip
-P2Ptree/kddcup22_sdwpf_evaluation/paddlepaddle/tests
-P2Ptree/kddcup22_sdwpf_evaluation/torch
+POPtree/raw_data/wtbdata_245days.csv
+POPtree/data_del5_SingleLgbRepair
+POPtree/checkpoints/mlgb
+POPtree/kddcup22_sdwpf_evaluation/qiaosu
+POPtree/kddcup22_sdwpf_evaluation/paddlepaddle
+POPtree/kddcup22_sdwpf_evaluation/multi_frame
+POPtree/kddcup22_sdwpf_evaluation/test_x.zip
+POPtree/kddcup22_sdwpf_evaluation/test_y.zip
+POPtree/kddcup22_sdwpf_evaluation/paddlepaddle/tests
+POPtree/kddcup22_sdwpf_evaluation/torch
 
 kddcup22-sdwpf-evaluation/test_x_144.zip
 kddcup22-sdwpf-evaluation/test_x_raw.zip
