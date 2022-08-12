@@ -4,6 +4,8 @@ __pycache__
 /kddcup22-sdwpf-evaluation/paddlepaddle/__pycache__
 /kddcup22-sdwpf-evaluation/paddlepaddle/__pycache__
 
+config/wpf
+
 P2Ptree/raw_data/wtbdata_245days.csv
 P2Ptree/data_del5_SingleLgbRepair
 P2Ptree/checkpoints/mlgb
@@ -21,6 +23,8 @@ kddcup22-sdwpf-evaluation/test_y_raw.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-1.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-test.zip
 kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719.zip
+kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-2.zip
+kddcup22-sdwpf-evaluation/paddlepaddle/tests/test-lxf-0719-3.zip
 
 **/data/*
 !**/data/preprocessed.ipynb

@@ -1,4 +1,4 @@
-# Team zhangshijin WPFormer: A Spatio-Temporal Graph Transformer with Auto-Correlation for Wind Power Prediction
+# WPFormer: A Spatio-Temporal Graph Transformer with Auto-Correlation for Wind Power Prediction
 ## 1.Introduction
 The use of wind power, a pollution-free and renewable form of
 energy, to generate electricity has attracted increasing attention in
@@ -17,9 +17,9 @@ all_data_water.csv -> /data/all_data_water.csv
 
 wtbdata_245days.csv -> /data/wtbdata_245days.csv
 
-wtbdata_245days.csv -> /P2Ptree/raw_data/wtbdata_245days.csv
+wtbdata_245days.csv -> /POPtree/raw_data/wtbdata_245days.csv
 
-data_del5_SingleLgbRepair -> /P2Ptree/data_del5_SingleLgbRepair
+data_del5_SingleLgbRepair -> /POPtree/data_del5_SingleLgbRepair
 
 
 ## 3.Model Training and Testing
@@ -28,8 +28,8 @@ data_del5_SingleLgbRepair -> /P2Ptree/data_del5_SingleLgbRepair
 for train Deep models:
     python /home/user/david/kdd/Data_Competitions/KDD2022_WPF/main.py --conf ./config/config_clear_st_18.yaml
 
-for train P2Ptree:
-    cd ./P2Ptree/code/
+for train POPtree:
+    cd ./POPtree/code/
     python train_parallel.py
 
 for test:
@@ -90,7 +90,7 @@ The steady improvement of online experiments proves the effectiveness of our mod
 | 6          | + Change the training parameters                | -44.40641          | - 43.26067    |
 | 7          | + feature screening3                            | -44.39223          | -43.28473     |
 | 8          | + model fusion + Change the training parameters | -44.37068          | -43.31144     |
-| 9          | + P2Ptree                                       | **-44.32841**      | -43.28473     |
+| 9          | + POPtree                                       | **-44.32841**      | -43.28473     |
 
  Results of Phase 3:
 
@@ -101,7 +101,7 @@ The steady improvement of online experiments proves the effectiveness of our mod
 | 3          | + feature screening                 | -45.25772          | -43.40196     |
 | 4          | + autocorrelation mechanism         | -45.20941          | -43.10517     |
 | 5          | + model fusion                      | **-45.13867**      | -43.10917     |
-| 6          | Add the P2Ptree based on model No.2 | -45.22724          | 43.35802      |
+| 6          | Add the POPtree based on model No.2 | -45.22724          | 43.35802      |
 
 ## 9.Contact
 If you have any questions, please contact liangxf20@mails.tsinghua.edu.cn.
