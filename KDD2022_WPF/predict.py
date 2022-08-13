@@ -123,7 +123,7 @@ def save_std_mean(train_data, output_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='main')
-    parser.add_argument("--conf", type=str, default="./config/config_clear_st_18.yaml")
+    parser.add_argument("--conf", type=str, default="./config/wpf/config_clear_wpformer20.yaml")
     args = parser.parse_args()
     config = edict(yaml.load(open(args.conf), Loader=yaml.FullLoader))
 

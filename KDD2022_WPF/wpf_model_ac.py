@@ -81,8 +81,8 @@ class TransformerDecoderLayer(nn.Layer):
 
         self.decomp = SeriesDecomp(DECOMP)
 
-        # self.self_attn = nn.MultiHeadAttention(d_model, nhead)
-        self.self_attn = AutoCorrelationLayer(
+        self.self_attn = nn.MultiHeadAttention(d_model, nhead)
+        self.auto_attn = AutoCorrelationLayer(
             AutoCorrelation(
                 mask_flag=False, 
                 factor=factor, 
@@ -95,17 +95,17 @@ class TransformerDecoderLayer(nn.Layer):
         )
 
         # self.cross_attn = nn.MultiHeadAttention(d_model, nhead)
-        self.cross_attn = AutoCorrelationLayer(
-            AutoCorrelation(
-                mask_flag=False,  # should be True in original AutoFormer
-                factor=factor, 
-                scale=None, 
-                attention_dropout=attn_dropout, 
-                output_attention=False
-            ),
-            d_model,
-            nhead
-        )
+        # self.cross_attn = AutoCorrelationLayer(
+        #     AutoCorrelation(
+        #         mask_flag=False,  # should be True in original AutoFormer
+        #         factor=factor, 
+        #         scale=None, 
+        #         attention_dropout=attn_dropout, 
+        #         output_attention=False
+        #     ),
+        #     d_model,
+        #     nhead
+        # )
 
         self.linear1 = nn.Linear(d_model, dims_feedforward)
         self.dropout = nn.Dropout(act_dropout, mode="upscale_in_train")
@@ -120,14 +120,17 @@ class TransformerDecoderLayer(nn.Layer):
 
     def forward(self, src, memory, src_mask=None, cache=None):
         residual = src
-        src = self.self_attn(src, src, src, None)
-        src = residual + self.dropout1(src)
+        self_attn_src = self.self_attn(src, src, src, None)
+        auto_attn_src = self.auto_attn(src, src, src, None)
+        src = residual + self.dropout1(self_attn_src) + self.dropout1(auto_attn_src)
 
         src, trend1 = self.decomp(src)
 
         residual = src
-        src = self.self_attn(src, memory, memory, None)
-        src = residual + self.dropout1(src)
+        # src = self.self_attn(src, memory, memory, None)
+        self_attn_src = self.self_attn(src, memory, memory, None)
+        auto_attn_src = self.auto_attn(src, memory, memory, None)
+        src = residual + self.dropout1(self_attn_src) + self.dropout1(auto_attn_src)
 
         src, trend2 = self.decomp(src)
         #    pass
@@ -176,8 +179,8 @@ class TransformerEncoderLayer(nn.Layer):
 
         self.decomp = SeriesDecomp(DECOMP)
 
-        # self.self_attn = nn.MultiHeadAttention(d_model, nhead)
-        self.self_attn = AutoCorrelationLayer(
+        self.self_attn = nn.MultiHeadAttention(d_model, nhead)
+        self.auto_attn = AutoCorrelationLayer(
             AutoCorrelation(
                 mask_flag=False, 
                 factor=factor, 
@@ -199,8 +202,11 @@ class TransformerEncoderLayer(nn.Layer):
 
     def forward(self, src, src_mask=None, cache=None):
         residual = src
-        src = self.self_attn(src, src, src, None)
-        src = residual + self.dropout1(src)
+        self_attn_src = self.self_attn(src, src, src, None)
+        auto_attn_src = self.auto_attn(src, src, src, None)
+        src = residual + self.dropout1(self_attn_src) + self.dropout1(auto_attn_src)
+        # src = self.self_attn(src, src, src, None)
+        # src = residual + self.dropout1(src)
 
         src, _ = self.decomp(src)
 
